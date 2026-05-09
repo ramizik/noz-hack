@@ -54,6 +54,8 @@ export interface AgentMemory {
   evidence: Evidence[];
   cycleCount: number;
   lastCycleAt: string;
+  createdAt?: string;
+  alert?: Alert;
   handoffSummary?: string;
 }
 
@@ -63,4 +65,21 @@ export interface Alert {
   affectedSystem: string;
   details: string;
   timestamp: string;
+}
+
+export interface AgentSummary {
+  sandboxName: string;
+  sandboxId: string | null;
+  lastCycleAt: string | null;
+  totalCycles: number;
+  totalEvidence: number;
+  totalTasks: number;
+  totalNiaHits: number;
+  activeIncidents: number;
+  resolvedIncidents: number;
+}
+
+export interface AgentStatusResponse {
+  incidents: AgentMemory[];
+  agent: AgentSummary;
 }

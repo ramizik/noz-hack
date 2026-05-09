@@ -1,8 +1,12 @@
 .next/
 node_modules/
+.env
 .env.local
 .env*.local
 out/
 tsconfig.tsbuildinfo
 .DS_Store
 __pycache__/
+claude.md
+*.png
+.claude/settings.local.json
