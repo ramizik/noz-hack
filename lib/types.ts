@@ -79,7 +79,43 @@ export interface AgentSummary {
   resolvedIncidents: number;
 }
 
+export interface NiaRetrieval {
+  id: string;
+  cycle: number;
+  documentTitle: string;
+  section: string;
+  queryUsed: string;
+  excerpt: string;
+  sourcePath: string;
+  timestamp: string;
+}
+
+export interface DerivedTimelineEvent {
+  id: string;
+  eventType:
+    | "alert_ingested"
+    | "nia_search"
+    | "classify"
+    | "tasks_created"
+    | "memory_write"
+    | "memory_read"
+    | "new_evidence"
+    | "escalate"
+    | "handoff";
+  summary: string;
+  niaInvolved: boolean;
+  timestamp: string;
+  cycle: number;
+}
+
+export type IncidentPhaseStep = "detected" | "triaged" | "contained" | "resolved";
+
 export interface AgentStatusResponse {
   incidents: AgentMemory[];
   agent: AgentSummary;
+  niaRetrievals: NiaRetrieval[];
+  timeline: DerivedTimelineEvent[];
+  agentStatus: "active" | "sleeping";
+  nextCycleInSeconds: number;
+  phase: IncidentPhaseStep;
 }

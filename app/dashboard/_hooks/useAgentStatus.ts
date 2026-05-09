@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { AgentMemory, AgentStatusResponse, AgentSummary } from "@/lib/types";
+import type {
+  AgentMemory,
+  AgentStatusResponse,
+  AgentSummary,
+  NiaRetrieval,
+  DerivedTimelineEvent,
+  IncidentPhaseStep,
+} from "@/lib/types";
 import { AGENT_STATUS_ENDPOINT, POLL_INTERVAL_MS } from "@/lib/constants";
 
 const EMPTY_SUMMARY: AgentSummary = {
@@ -20,6 +27,11 @@ interface AgentStatus {
   incidents: AgentMemory[];
   latest: AgentMemory | null;
   agent: AgentSummary;
+  niaRetrievals: NiaRetrieval[];
+  timeline: DerivedTimelineEvent[];
+  agentStatus: "active" | "sleeping";
+  nextCycleInSeconds: number;
+  phase: IncidentPhaseStep;
   loading: boolean;
   lastPoll: Date | null;
   refresh: () => Promise<void>;
@@ -28,6 +40,11 @@ interface AgentStatus {
 export function useAgentStatus(): AgentStatus {
   const [incidents, setIncidents] = useState<AgentMemory[]>([]);
   const [agent, setAgent] = useState<AgentSummary>(EMPTY_SUMMARY);
+  const [niaRetrievals, setNiaRetrievals] = useState<NiaRetrieval[]>([]);
+  const [timeline, setTimeline] = useState<DerivedTimelineEvent[]>([]);
+  const [agentStatus, setAgentStatus] = useState<"active" | "sleeping">("sleeping");
+  const [nextCycleInSeconds, setNextCycleInSeconds] = useState(0);
+  const [phase, setPhase] = useState<IncidentPhaseStep>("detected");
   const [loading, setLoading] = useState(true);
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
 
@@ -37,9 +54,14 @@ export function useAgentStatus(): AgentStatus {
       const data = (await res.json()) as AgentStatusResponse;
       setIncidents(data.incidents ?? []);
       if (data.agent) setAgent(data.agent);
+      setNiaRetrievals(data.niaRetrievals ?? []);
+      setTimeline(data.timeline ?? []);
+      setAgentStatus(data.agentStatus ?? "sleeping");
+      setNextCycleInSeconds(data.nextCycleInSeconds ?? 0);
+      setPhase(data.phase ?? "detected");
       setLastPoll(new Date());
     } catch {
-      // keep prior state on transient failure
+      // keep prior state
     } finally {
       setLoading(false);
     }
@@ -57,5 +79,17 @@ export function useAgentStatus(): AgentStatus {
         new Date(b.lastCycleAt).getTime() - new Date(a.lastCycleAt).getTime()
     )[0] ?? null;
 
-  return { incidents, latest, agent, loading, lastPoll, refresh };
+  return {
+    incidents,
+    latest,
+    agent,
+    niaRetrievals,
+    timeline,
+    agentStatus,
+    nextCycleInSeconds,
+    phase,
+    loading,
+    lastPoll,
+    refresh,
+  };
 }
