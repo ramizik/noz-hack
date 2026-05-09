@@ -3,14 +3,6 @@ import type { ConsoleLog, IncidentDerivedStatus, LanayaUpdate } from "./incident
 
 export const POLL_INTERVAL_MS = 5000;
 
-export const ENV_KEYS = {
-  DEMO_MOCK_MODE: "DEMO_MOCK_MODE",
-} as const;
-
-export function isMockMode(): boolean {
-  return process.env[ENV_KEYS.DEMO_MOCK_MODE] === "true";
-}
-
 export const BRAND = {
   NAME: "SentinelOps",
   TAGLINE: "Always-On Incident Commander",
@@ -54,6 +46,7 @@ export const TEAM_LABELS = {
 
 export const REPLAY_ENDPOINT = "/api/webhook";
 export const AGENT_STATUS_ENDPOINT = "/api/agent-status";
+export const INJECT_ALERT_ENDPOINT = "/api/inject-alert";
 export const LANAYA_ENDPOINT = "/api/lanaya";
 
 export const SEVERITY_PILL: Record<Severity, string> = {

@@ -1,29 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
-import { listAllMemory, readMemory } from "@/lib/tensorlake";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { listAllMemory, readMonitoringMemory } from "@/lib/tensorlake";
 import { summarizeAgent } from "@/lib/agentSummary";
-import { isMockMode } from "@/lib/constants";
-import { mockStore } from "@/lib/mockStore";
 import { deriveNiaRetrievals, deriveTimeline, deriveAgentStatus, derivePhase } from "@/lib/deriveView";
 import type { AgentStatusResponse } from "@/lib/types";
 
 export const maxDuration = 30;
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const incidentId = searchParams.get("incidentId");
-  const mock = isMockMode();
+export async function GET(_req: NextRequest) {
+  const [incidents, monitoring] = await Promise.all([
+    listAllMemory(),
+    readMonitoringMemory(),
+  ]);
 
-  if (incidentId) {
-    const memory = await readMemory();
-    return NextResponse.json({ memory: memory ?? null });
-  }
-
-  const incidents = mock ? mockStore.list() : await listAllMemory();
   const latest = incidents.sort(
     (a, b) => new Date(b.lastCycleAt).getTime() - new Date(a.lastCycleAt).getTime()
   )[0] ?? null;
 
   const { agentStatus, nextCycleInSeconds } = deriveAgentStatus(latest);
+
+  const monitoringStatus = latest
+    ? "incident"
+    : monitoring
+    ? "all_clear"
+    : "idle";
 
   const response: AgentStatusResponse = {
     incidents,
@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
     agentStatus,
     nextCycleInSeconds,
     phase: derivePhase(latest),
+    monitoringStatus,
+    monitoringMessage: monitoring?.message ?? null,
+    monitoringLastCheckedAt: monitoring?.lastCheckedAt ?? null,
   };
+
   return NextResponse.json(response);
 }
