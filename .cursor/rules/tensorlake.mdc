@@ -1,0 +1,123 @@
+---
+description: Reference knowledge for Tensorlake SDK. Use for discovering use-cases and documentation.
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+---
+
+# Tensorlake
+
+> Tensorlake gives agents a stateful execution environment — isolated MicroVM sandboxes that boot in hundreds of milliseconds (with memory and filesystem preserved across suspend/resume) plus durable Orchestration for long-running, crash-resumable agent workflows. Works with any LLM provider (Anthropic, OpenAI), framework (LangChain, OpenAI Agents SDK, Claude Agent SDK), database, or API.
+
+## Getting Started
+
+- [START HERE: Tensorlake Skills for Coding Agents](https://docs.tensorlake.ai/agent-skills.md): Install the Tensorlake skill into Claude Code, Codex, or any coding agent so it learns to build production workflows with the Orchestration and Sandbox SDKs — the fastest way to get an agent productive with Tensorlake.
+- [Authentication](https://docs.tensorlake.ai/platform/authentication.md): Learn how to make API requests to the Tensorlake APIs
+- [Sandboxes Quickstart](https://docs.tensorlake.ai/sandboxes/quickstart.md): Install the SDK, authenticate, and run your first sandbox in under five minutes.
+- [Orchestration + Sandboxes](https://docs.tensorlake.ai/applications/sandboxes.md): How Orchestration coordinates Sandboxes — the two core integration patterns: agent-in-sandbox and sandbox-as-tool.
+- [Orchestration Quickstart](https://docs.tensorlake.ai/applications/quickstart.md): Write, deploy, and call your first Tensorlake Application — a serverless agentic web-scraper with the Claude Agent SDK in under five minutes.
+- [SDK Reference (Orchestration)](https://docs.tensorlake.ai/applications/concepts.md): Functions, applications, decorators, request context, and lifecycle reference
+- [Code Interpreter Agent](https://docs.tensorlake.ai/examples/agentic-applications/code-interpreter.md): Build a secure code execution environment using Tensorlake and OpenAI.
+
+## Sandboxes
+
+### Core Docs
+
+- [Sandbox and Orchestration Infrastructure for Agents](https://docs.tensorlake.ai/sandboxes/introduction.md)
+- [SDK Reference (Sandboxes)](https://docs.tensorlake.ai/sandboxes/sdk-reference.md): Sandbox handle — every method, parameter, and data model you need to build with sandboxes, in one page.
+- [Async SDK (Python)](https://docs.tensorlake.ai/sandboxes/async.md): Use the AsyncSandbox class to drive sandboxes from asyncio code.
+- [Lifecycle](https://docs.tensorlake.ai/sandboxes/lifecycle.md): Sandbox states, creation, suspend/resume, and cleanup
+- [Environment Variables](https://docs.tensorlake.ai/sandboxes/environment-variables.md): Set per-command and per-PTY environment variables in the CLI, Python, and TypeScript.
+- [Execute Commands](https://docs.tensorlake.ai/sandboxes/commands.md): Run commands with output capture, streaming, and error handling
+- [SSH and PTY Sessions](https://docs.tensorlake.ai/sandboxes/pty-sessions.md): Reach a running sandbox over standard SSH, or open a programmatic PTY session over WebSocket
+- [File Operations](https://docs.tensorlake.ai/sandboxes/file-operations.md): Copy, read, write, and manage files inside Tensorlake sandboxes — transfer between your local machine and the sandbox filesystem over the proxy URL.
+- [Process Management](https://docs.tensorlake.ai/sandboxes/processes.md): Start, monitor, and manage background processes in sandboxes
+- [Snapshots](https://docs.tensorlake.ai/sandboxes/snapshots.md): Save and restore sandbox filesystem, memory, and running processes
+- [Sandbox Images](https://docs.tensorlake.ai/sandboxes/images.md): Define reusable named sandbox images in Python, TypeScript, or Dockerfiles.
+- [Computer Use](https://docs.tensorlake.ai/sandboxes/computer-use.md): Launch ubuntu-vnc sandboxes and drive their desktop from Python or JavaScript.
+- [Skills in Sandboxes](https://docs.tensorlake.ai/sandboxes/skills-in-sandboxes.md): Pre-load TensorLake skill files inside sandbox images so coding agents auto-discover them at startup.
+- [Networking](https://docs.tensorlake.ai/sandboxes/networking.md): Route internet traffic into sandbox applications and control outbound internet access
+- [Local Tunnels](https://docs.tensorlake.ai/sandboxes/tunnels.md): Forward a local TCP port to a port inside a sandbox over an authenticated WebSocket.
+- [Run Docker](https://docs.tensorlake.ai/sandboxes/docker.md): Run Docker containers inside Tensorlake sandboxes using the ubuntu-systemd base image — full systemd support for compose, networking, and daemons.
+
+### Use Cases
+
+- [Harbor](https://docs.tensorlake.ai/sandboxes/harbor.md): Run Harbor evaluations and RL rollouts on Tensorlake Sandboxes — fresh isolation per trial, pre-warmed snapshots for expensive environments, and independent test verification.
+- [Tool Calls](https://docs.tensorlake.ai/sandboxes/tool-calls.md): Expose Tensorlake sandboxes as tools to your LLM agents — give models a fresh, isolated execution environment for code, shell, and file operations.
+- [Drive Chrome over CDP](https://docs.tensorlake.ai/sandboxes/chrome-cdp.md): Run Google Chrome inside an ubuntu-vnc sandbox and drive it locally through the Chrome DevTools Protocol over a tunnel.
+- [Agentic Swarm Intelligence](https://docs.tensorlake.ai/sandboxes/agentic-swarm-intelligence.md): Orchestrate a swarm of LLM agents running specialized tasks in parallel sandboxes.
+- [Agentic Dungeons & Dragons](https://docs.tensorlake.ai/sandboxes/agentic-d&g.md): Build a dynamic D&D-style game where parallel AI agents act as scene writers and a Dungeon Master agent orchestrates the story.
+- [RL Training with GSPO](https://docs.tensorlake.ai/sandboxes/gspo-agentic-rl.md): Fine-tune a language model on code generation tasks using Group Sequence Policy Optimization, with TensorLake sandboxes as the reward oracle.
+- [Reproducible Environments for RL Rollouts](https://docs.tensorlake.ai/sandboxes/agentic-rl-reproducible-env.md): Use Tensorlake sandboxes to guarantee isolated, deterministic rollouts for reinforcement learning training.
+- [Agentic Autoresearch Loop](https://docs.tensorlake.ai/sandboxes/agentic-autoresearch.md): Autonomously improve an ML training script overnight using an LLM agent that proposes code modifications, races them in parallel sandboxes, and hill-climbs toward lower validation loss.
+- [CICD & Build Systems](https://docs.tensorlake.ai/sandboxes/cicd-build.md): Execute build steps and run tests in isolated, reproducible environments.
+- [Data Analysis](https://docs.tensorlake.ai/sandboxes/data-analysis.md): Perform parallel data analysis and model benchmarking in isolated sandboxes.
+
+## Orchestration
+
+- [Introduction](https://docs.tensorlake.ai/applications/introduction.md): Add serverless orchestration to any agent
+- [Programming Agents](https://docs.tensorlake.ai/applications/overview.md): Core concepts and common patterns for running agents on Tensorlake
+- [Architecture](https://docs.tensorlake.ai/applications/architecture.md): How Tensorlake's Application Runtime runs your code under the hood
+- [Building Workflows](https://docs.tensorlake.ai/applications/building-workflows.md): Build multi-step data workflows with parallel execution and optimized resource usage
+- [Durable Execution](https://docs.tensorlake.ai/applications/durability.md): Tensorlake automatically persists function outputs so retries and replays skip already-succeeded work — avoiding costly restarts of long-running agent workflows.
+- [Crash Recovery](https://docs.tensorlake.ai/applications/crash-recovery.md): How agents survive failures and resume without losing work
+- [Futures](https://docs.tensorlake.ai/applications/futures.md): Use Futures to run multiple function calls in parallel to optimize resource usage and reduce latency.
+- [Map-Reduce](https://docs.tensorlake.ai/applications/map-reduce.md): Use map-reduce patterns in Tensorlake Applications to parallelize large-scale ETL — apply a function across items and aggregate the results.
+- [Parallel Sub-Agents](https://docs.tensorlake.ai/applications/parallel-sub-agents.md): Fan out work to specialist agents that run in parallel
+- [Retries & Rate Limits](https://docs.tensorlake.ai/applications/retries.md): Handle LLM rate limits, transient failures, and structured output validation with durable retries
+- [Error handling](https://docs.tensorlake.ai/applications/error-handling.md): How errors propagate in Tensorlake Applications — function exceptions, timeouts, retries, and patterns for building resilient agentic workflows.
+- [Autoscaling](https://docs.tensorlake.ai/applications/scaling-agents.md): Autoscaling guide for Orchestration endpoints
+- [Cron Scheduler](https://docs.tensorlake.ai/applications/cron-scheduler.md): Schedule recurring invocations of your Orchestration endpoints.
+- [Observability](https://docs.tensorlake.ai/applications/observability.md): Built-in tracing, execution timelines and monitoring
+- [Container Images](https://docs.tensorlake.ai/applications/images.md): Define per-function container images declaratively with Tensorlake's `Image` API — set the base image, install Python and system packages, and customize per-deploy.
+- [Secrets](https://docs.tensorlake.ai/applications/secrets.md): Providing secrets to Tensorlake functions
+- [Async Functions](https://docs.tensorlake.ai/applications/async-functions.md): Use Python async/await with Tensorlake async functions.
+- [Timeouts](https://docs.tensorlake.ai/applications/timeouts.md): How function timeouts work and how progress updates reset them
+- [Scale-Out & Queuing](https://docs.tensorlake.ai/applications/scale-out-queuing.md): Workflows scale automatically as endpoints are called, with configurable scaling per function
+- [Progress Updates](https://docs.tensorlake.ai/applications/guides/streaming-progress.md): Stream real-time progress updates from functions
+- [Logging](https://docs.tensorlake.ai/applications/guides/logging.md): Emit logs from Tensorlake applications with `print`, the built-in application logger, or structlog for structured JSON logs that are easier to analyze and visualize.
+- [Troubleshooting](https://docs.tensorlake.ai/applications/production/troubleshooting.md): Common issues building Tensorlake applications and how to debug them
+
+## Integrations & Examples
+
+- [Integrations](https://docs.tensorlake.ai/integrations/overview.md): Connect Tensorlake with your favorite AI frameworks, vector databases, and data platforms.
+- [LangChain](https://docs.tensorlake.ai/integrations/langchain.md): Build agentic workflows that automatically parse documents on-demand
+- [Examples](https://docs.tensorlake.ai/examples/overview.md): Tutorials, cookbooks, and use cases for building with Tensorlake.
+- [Agent with Tool Calling](https://docs.tensorlake.ai/examples/agentic-applications/agent-with-tools.md): Build a Claude agent that orchestrates complex workflows using tool calls.
+- [Deep Research Agent](https://docs.tensorlake.ai/examples/agentic-applications/deep-research.md): Build a multi-agent deep research pipeline with Tensorlake and OpenAI.
+
+## API Reference
+
+- [API Reference Introduction](https://docs.tensorlake.ai/api-reference/v2/introduction.md): Tensorlake v2 API reference entry point.
+- [Sandboxes API — Create](https://docs.tensorlake.ai/api-reference/v2/sandboxes/create.md): Create an ephemeral or named sandbox. See sibling endpoints for list / get / update / delete / snapshot / restore / suspend / resume.
+- [Sandbox Processes API](https://docs.tensorlake.ai/api-reference/v2/processes/introduction.md): Manage sandbox processes through the sandbox proxy (start, list, signal, stdin/stdout/stderr, follow).
+- [Sandbox Files API](https://docs.tensorlake.ai/api-reference/v2/sandbox-files/introduction.md): Read, write, delete, and list files through the sandbox proxy.
+- [Sandbox PTY API](https://docs.tensorlake.ai/api-reference/v2/pty/introduction.md): Create and manage interactive PTY sessions through the sandbox proxy.
+- [Parse API](https://docs.tensorlake.ai/api-reference/v2/parse/parse.md): Unified document parse endpoint. See sibling endpoints for read / extract / classify / edit / list / get / delete.
+
+## Optional
+
+### Document Ingestion
+
+- [Document Ingestion Overview](https://docs.tensorlake.ai/document-ingestion/overview.md): Tensorlake Document Ingestion turns unstructured documents into structured data, built as an application on Orchestrate.
+- [Document Ingestion Quickstart](https://docs.tensorlake.ai/document-ingestion/quickstart.md): Parse your first document with the Tensorlake Document Ingestion API and inspect the structured output.
+- [Read Documents](https://docs.tensorlake.ai/document-ingestion/parsing/read.md): Convert documents to Markdown with spatial page layouts — tables, figures, bounding boxes, and reading-order fragments returned by the Read API.
+- [Structured Data Extraction](https://docs.tensorlake.ai/document-ingestion/parsing/structured-extraction.md): Extract structured fields from documents using one or more JSON Schemas — no field limits, and multiple schemas in a single API call.
+- [Managing Files](https://docs.tensorlake.ai/document-ingestion/file-management/overview.md): Upload, list, and delete files in Tensorlake — or skip the upload step by passing a pre-signed or publicly accessible URL to the parse endpoint.
+- [Integration Guide](https://docs.tensorlake.ai/document-ingestion/production/integration.md): End-to-end guide to integrating Tensorlake Document Ingestion with your existing workflows via the HTTP APIs — upload, parse, and retrieve results.
+- [Create Datasets](https://docs.tensorlake.ai/document-ingestion/datasets/create.md): Datasets let you apply the same parsing configuration to many documents — useful for versioning schemas and OCR settings across workflows.
+- [Retrieve Dataset Data](https://docs.tensorlake.ai/document-ingestion/datasets/data.md): Retrieve the data stored in a Tensorlake Dataset.
+- [Barcode Detection](https://docs.tensorlake.ai/document-ingestion/parsing/barcode.md): Detecting and decoding barcodes from document pages, returning type, value, and bounding boxes as structured output.
+- [Chart Extraction](https://docs.tensorlake.ai/document-ingestion/parsing/chart-extraction.md): Extract structured, plottable data from charts embedded in documents — bar, line, scatter, and pie charts output as standardized JSON.
+- [Docx Parsing with Tracked Changes](https://docs.tensorlake.ai/document-ingestion/parsing/docx-parsing.md): Learn how to parse Docx documents, including tracked changes and comments.
+- [Edit Documents](https://docs.tensorlake.ai/document-ingestion/parsing/edit.md): Fill forms and modify documents
+- [Cross-page Header Correction](https://docs.tensorlake.ai/document-ingestion/parsing/header-correction.md): Automatically detect and correct document header hierarchy across pages, even when OCR misidentifies header levels.
+- [Key-Value Extraction](https://docs.tensorlake.ai/document-ingestion/parsing/key-value-extraction.md): Template-free extraction of structured field data from forms — text inputs, checkboxes, radio buttons, dropdowns, and signature lines.
+- [On-premise deployment](https://docs.tensorlake.ai/document-ingestion/parsing/on-prem.md): Run Tensorlake's Document Ingestion API in your own AWS infrastructure — OCR models, API services, and the open-source Compute Engine.
+- [Page Classification](https://docs.tensorlake.ai/document-ingestion/parsing/page-classification.md): Classify pages using semantic descriptions in natural language
+- [Parsed Document Reference](https://docs.tensorlake.ai/document-ingestion/parsing/parse-output.md): Understand the output from calling the Parse API.
+- [Signature Detection](https://docs.tensorlake.ai/document-ingestion/parsing/signature.md): Detect signatures in documents
+- [Summarization](https://docs.tensorlake.ai/document-ingestion/parsing/summarization.md): Summarize Tables, Figures and Charts in Documents
+- [Table Merging](https://docs.tensorlake.ai/document-ingestion/parsing/table-merging.md): Automatically merge table fragments that span multiple pages or columns into a single unified table for LLM-ready output.
+
+- [OpenAPI Spec](https://docs.tensorlake.ai/api-reference/openapi.yaml): Raw OpenAPI schema for the Tensorlake APIs, useful for exact endpoint inspection and client generation.
+
+- [llms-full.txt](https://docs.tensorlake.ai/llms-full.txt): Full text of every documentation page — use when you need the complete content, not just the index.

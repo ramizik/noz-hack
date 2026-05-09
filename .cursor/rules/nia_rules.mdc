@@ -1,0 +1,255 @@
+---
+description: Expert research agent for Nia's knowledge tools. Use for discovering repos/docs, deep technical research, remote codebase exploration, and cross-agent knowledge handoffs.
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+---
+
+# Nia Rules
+
+Research specialist for external knowledge using Nia MCP tools. NOT for file editing, code modification, or git operations.
+
+## Documentation Index
+
+- Fetch the complete docs index from `https://docs.trynia.ai/llms.txt` before broad docs exploration.
+- Use this index to discover available pages, then choose targeted pages to read/search.
+
+## Tips & Tricks
+
+### 1) When using Nia search
+
+- Run Nia search multiple times as needed and follow result links for full context.
+- Use `read_source_content` (or your workspace's equivalent content-read tool) to read full pages/files linked by search results.
+
+### 2) Use package search for dependency internals
+
+- For package behavior questions, search package source directly instead of relying on summaries.
+- Preferred methods:
+  - Grep search for exact symbols/patterns.
+  - Hybrid package search for regex + semantic lookup.
+  - File reading for exact source lines and surrounding context.
+- Example prompts:
+  - "In numpy, what environment variables or compile-time flags switch kernels, and how do you plug in a custom inner loop?"
+  - "How do I stream responses with AI SDK? Use package search."
+  - "Search PostHog and explain how they handle analytics and usage monitoring."
+
+### 3) At the start of a new chat
+
+- First list indexed docs/repos so the agent sees currently available sources before researching.
+- If needed, refresh with `manage_resource(action="list")` and then proceed with targeted exploration.
+
+## Nia SDK Examples (Python + TypeScript)
+
+- Before implementation, read the docs index at `https://docs.trynia.ai/llms.txt` to discover current endpoints and pages.
+- Use high-level SDK calls first; use low-level API services when you need endpoint-specific control.
+
+### SDK initialization
+
+```python
+import os
+from nia_py.sdk import NiaSDK
+
+sdk = NiaSDK(api_key=os.environ["NIA_API_KEY"])
+```
+
+```typescript
+import { NiaSDK } from "nia-ai-ts";
+
+const sdk = new NiaSDK({ apiKey: process.env.NIA_API_KEY! });
+```
+
+### Index repository or docs source
+
+```python
+sdk.sources.create({"url": "https://github.com/vercel/ai", "branch": "main"})
+sdk.sources.create({"url": "https://docs.anthropic.com", "display_name": "Anthropic Docs"})
+```
+
+```typescript
+await sdk.sources.create({ url: "https://github.com/vercel/ai", branch: "main" });
+await sdk.sources.create({ url: "https://docs.anthropic.com", display_name: "Anthropic Docs" });
+```
+
+### Semantic search over indexed content
+
+```python
+result = sdk.search.query(
+    messages=[{"role": "user", "content": "How does streaming work in the AI SDK?"}],
+    repositories=["vercel/ai"],
+    include_sources=True,
+)
+```
+
+```typescript
+const result = await sdk.search.query({
+  messages: [{ role: "user", content: "How does streaming work in the AI SDK?" }],
+  repositories: ["vercel/ai"],
+  include_sources: true,
+});
+```
+
+### Universal and web search
+
+```python
+universal = sdk.search.universal(
+    query="How to implement tool calling?",
+    top_k=10,
+    include_repos=True,
+    include_docs=True,
+)
+web = sdk.search.web(query="latest LLM developments 2025")
+```
+
+```typescript
+const universal = await sdk.search.universal({
+  query: "How to implement tool calling?",
+  top_k: 10,
+  include_repos: true,
+  include_docs: true,
+});
+const web = await sdk.search.web({ query: "latest LLM developments 2025" });
+```
+
+### Package search (no indexing required)
+
+```python
+from nia_py.api.v2_api import package_search_hybrid_v2_v2_package_search_hybrid_post
+from nia_py.models import PackageSearchHybridRequest
+
+result = package_search_hybrid_v2_v2_package_search_hybrid_post.sync(
+    client=client,
+    body=PackageSearchHybridRequest(
+        registry="py_pi",
+        package_name="openai",
+        semantic_queries=["How does streaming work?"],
+    ),
+)
+```
+
+```typescript
+import { V2ApiPackageSearchService } from "nia-ai-ts";
+
+const result =
+  await V2ApiPackageSearchService.packageSearchHybridV2V2PackageSearchHybridPost({
+    registry: "py_pi",
+    package_name: "openai",
+    semantic_queries: ["How does streaming work?"],
+  });
+```
+
+### Oracle research job (create + poll)
+
+```python
+job = sdk.oracle.create_job(
+    query="Compare React Server Components vs traditional SSR",
+    repositories=["vercel/next.js"],
+    output_format="comparison table",
+)
+result = sdk.oracle.wait_for_job(job_id=job["id"], timeout_seconds=300.0, poll_interval_seconds=3.0)
+```
+
+```typescript
+const job = await sdk.oracle.createJob({
+  query: "Compare React Server Components vs traditional SSR",
+  repositories: ["vercel/next.js"],
+  output_format: "comparison table",
+});
+const result = await sdk.oracle.waitForJob(job.id, 300_000, 3_000);
+```
+
+### Context sharing
+
+```python
+from nia_py.api.v2_api import save_context_v2_v2_contexts_post
+from nia_py.models import ContextSaveRequest
+
+save_context_v2_v2_contexts_post.sync(
+    client=client,
+    body=ContextSaveRequest(
+        title="Auth implementation notes",
+        summary="Implemented OAuth2 flow with refresh tokens",
+        content="Detailed implementation notes...",
+        tags=["auth", "oauth"],
+    ),
+)
+```
+
+```typescript
+import { V2ApiContextsService } from "nia-ai-ts";
+
+await V2ApiContextsService.saveContextV2V2ContextsPost({
+  title: "Auth implementation notes",
+  summary: "Implemented OAuth2 flow with refresh tokens",
+  content: "Detailed implementation notes...",
+  tags: ["auth", "oauth"],
+});
+```
+
+## Deterministic Workflow
+
+1. **Check sources** - Use `manage_resource(action="list", query="...")` or check `nia-sources.md`
+2. **Explore structure** - Use `nia_explore` (tree/ls) to understand layout
+3. **Search targeted** - Use `search`, `nia_grep`, `nia_read` for specific content
+4. **Save context** - Use `context(action="save", ...)` for significant findings
+5. **Track sources** - Update `nia-sources.md` with indexed sources and IDs
+
+## Tool Reference
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `index` | Index repo/docs/paper | `url`, `resource_type` (auto-detected) |
+| `search` | Semantic search | `query`, `repositories`, `data_sources` |
+| `manage_resource` | List/status/delete | `action`: list/status/rename/delete |
+| `nia_read` | Read file content | `source_type`, `source_identifier` |
+| `nia_grep` | Regex search | `source_type`, `pattern`, `repository` |
+| `nia_explore` | File structure | `source_type`, `action`: tree/ls |
+| `nia_research` | AI research | `mode`: quick/deep/oracle |
+| `nia_package_search_hybrid` | Package search | `registry`, `package_name`, `semantic_queries` |
+| `context` | Cross-agent sharing | `action`: save/list/retrieve/search |
+
+## Quick Decision Tree
+
+**FIND something** → `nia_research(mode="quick/deep/oracle", query="...")`
+
+**Make SEARCHABLE** → `index(url="...")` then wait and check `manage_resource(action="status", ...)`
+
+**SEARCH indexed content**:
+- Semantic: `search(query="...")`
+- Exact patterns: `nia_grep(source_type="repository", pattern="...", repository="...")`
+- Full file: `nia_read(source_type="repository", source_identifier="owner/repo:path")`
+- Structure: `nia_explore(source_type="repository", repository="owner/repo")`
+
+**MANAGE resources** → `manage_resource(action="list/status/delete", ...)`
+
+## Key Usage Patterns
+
+```python
+# Index (auto-detects type)
+index(url="https://github.com/owner/repo")
+index(url="https://docs.example.com")
+
+# Search
+search(query="How does X work?", repositories=["owner/repo"])
+
+# Read file
+nia_read(source_type="repository", source_identifier="owner/repo:src/file.py")
+
+# Grep pattern
+nia_grep(source_type="repository", repository="owner/repo", pattern="class.*Handler")
+
+# Explore
+nia_explore(source_type="repository", repository="owner/repo", action="tree")
+
+# Research
+nia_research(query="Best practices for X", mode="quick")
+
+# Save context
+context(action="save", title="Research Topic", summary="...", content="...", agent_source="cursor")
+```
+
+## Critical Notes
+
+- **Index first** - Always index before searching
+- **Wait for indexing** - Large repos take 1-5 minutes; check status before searching
+- **Use questions** - Frame as "How does X work?" not just "X"
+- **Parallel calls** - Run independent searches together for speed
+- **Cite sources** - Always include where you found information
+- **Track in nia-sources.md** - Record indexed sources to avoid re-listing

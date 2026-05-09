@@ -1,0 +1,16 @@
+{
+    "enableAllProjectMcpServers": true,
+    "enabledPlugins": {
+      "caveman@caveman": true,
+      "context7@claude-plugins-official": true,
+      "feature-dev@claude-plugins-official": true,
+      "superpowers@claude-plugins-official": true
+    },
+    "permissions": {
+      "allow": [
+        "Skill(update-config)"
+      ]
+    },
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1"
+  }
