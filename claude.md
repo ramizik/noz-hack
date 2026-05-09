@@ -114,13 +114,17 @@ Nia is not a chat bolt-on. It is the grounding layer that prevents hallucination
 - Tensorlake holds *what happened* (operational state, findings, task history)
 - Nia holds *what to do and why* (knowledge, runbooks, prior decisions)
 
-**Nia integration surface (Convex action handlers only):**
+**Nia integration surface:**
 - `POST /v2/contexts` — index context documents
-- `GET /v2/contexts/search` — targeted retrieval
+- `GET /v2/contexts/semantic-search?q=<query>&limit=<n>` — targeted retrieval (returns `{"results":[...]}`)
+  - Note: `/v2/contexts/search` also works but returns `{"contexts":[...]}` — different key; agent uses `semantic-search`
 - Base URL: `https://apigcp.trynia.ai/v2`
 - Auth: `Authorization: Bearer YOUR_API_KEY`
-- Do NOT use `nia-ai-ts` SDK — causes ESM bundling issues in Convex Node runtime on Windows
-- Store `NIA_API_KEY` in Convex environment variables; never hardcode secrets
+- Store `NIA_API_KEY` in env; never hardcode secrets
+
+**Tensorlake cron API (verified working):**
+- Trigger application: `POST https://api.tensorlake.ai/applications/<name>` with `Accept: application/json`
+- List/create cron schedules: `GET/POST https://api.tensorlake.ai/v1/namespaces/default/applications/<name>/cron-schedules`
 
 **Nia capabilities to highlight in product behavior:**
 - Filesystem metaphor across docs/PDFs/code/knowledge sources (tree-like navigation)
