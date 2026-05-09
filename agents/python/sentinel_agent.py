@@ -40,6 +40,8 @@ sentinel_image = Image().run(
         "OPENAI_API_KEY",
         "TENSORLAKE_API_KEY",
         "TENSORLAKE_MEMORY_SANDBOX_ID",
+        "SLACK_BOT_TOKEN",
+        "SLACK_CHANNEL_ID",
     ],
 )
 def sentinel_agent_cycle() -> dict:
@@ -162,6 +164,7 @@ async def _incident_cycle(sb, alert: dict) -> dict:
         "classification": classification["classification"],
         "tasks": [*(prior or {}).get("tasks", []), *tasks],
         "evidence": [*(prior or {}).get("evidence", []), *evidence],
+        "notifications": list((prior or {}).get("notifications", [])),
         "cycleCount": cycle_count,
         "lastCycleAt": now,
         "createdAt": (prior or {}).get("createdAt", now),
@@ -169,6 +172,9 @@ async def _incident_cycle(sb, alert: dict) -> dict:
     }
     if cycle_count >= 2:
         state["handoffSummary"] = _gen_handoff(client, state, nia_results)
+
+    state["notifications"] = _build_slack_outbox(state, alert, cycle_count)
+    state["notifications"] = _dispatch_slack_outbox(state["notifications"])
 
     await sb.write_file(
         f"{MEMORY_DIR}/{INCIDENT_ID}.json",
@@ -314,3 +320,139 @@ def _gen_handoff(client, memory: dict, nia: list) -> str:
         ],
     )
     return resp.choices[0].message.content
+
+
+def _build_slack_outbox(memory: dict, alert: dict, cycle: int) -> list[dict]:
+    """Create durable Slack message intents without duplicating sent notifications."""
+    existing = list(memory.get("notifications", []))
+    keys = {n.get("dedupeKey") for n in existing}
+
+    if cycle == 1:
+        dedupe = f"{memory['incidentId']}:slack:triage"
+        if dedupe not in keys:
+            existing.append(_slack_notification(
+                memory["incidentId"],
+                dedupe,
+                (
+                    f":rotating_light: SentinelOps triaged `{memory['incidentId']}` as "
+                    f"*{memory['severity'].upper()}* — {memory['classification']} on "
+                    f"`{alert.get('affectedSystem', 'unknown system')}`.\n"
+                    f"Tensorlake cycle {cycle} persisted {len(memory.get('evidence', []))} evidence item(s) "
+                    f"and {len(memory.get('tasks', []))} task(s)."
+                ),
+            ))
+
+    if cycle >= 2:
+        dedupe = f"{memory['incidentId']}:slack:handoff:{cycle}"
+        if dedupe not in keys:
+            handoff = memory.get("handoffSummary") or "Handoff summary pending."
+            existing.append(_slack_notification(
+                memory["incidentId"],
+                dedupe,
+                (
+                    f":fire: SentinelOps escalated `{memory['incidentId']}` to "
+                    f"*{memory['severity'].upper()}* after Tensorlake restored prior memory "
+                    f"and completed cycle {cycle}.\n\n{handoff}"
+                ),
+            ))
+
+    return existing
+
+
+def _slack_notification(incident_id: str, dedupe_key: str, text: str) -> dict:
+    ts = int(time.time() * 1000)
+    return {
+        "id": f"{incident_id}-slack-{ts}",
+        "incidentId": incident_id,
+        "dedupeKey": dedupe_key,
+        "channel": os.environ.get("SLACK_CHANNEL_ID", ""),
+        "text": text,
+        "status": "pending",
+        "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+def _dispatch_slack_outbox(notifications: list[dict]) -> list[dict]:
+    """Post pending/failed Slack intents and persist delivery receipts."""
+    token = os.environ.get("SLACK_BOT_TOKEN")
+    channel = os.environ.get("SLACK_CHANNEL_ID")
+    if not token or not channel:
+        return [
+            {**n, "error": "Missing SLACK_BOT_TOKEN or SLACK_CHANNEL_ID"}
+            if n.get("status") in ("pending", "failed") else n
+            for n in notifications
+        ]
+
+    return [
+        _send_slack_notification(token, channel, n)
+        if n.get("status") in ("pending", "failed") else n
+        for n in notifications
+    ]
+
+
+def _send_slack_notification(token: str, channel: str, notification: dict) -> dict:
+    import httpx
+
+    try:
+        posted = httpx.post(
+            "https://slack.com/api/chat.postMessage",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json; charset=utf-8",
+            },
+            json={
+                "channel": notification.get("channel") or channel,
+                "text": notification["text"],
+                "unfurl_links": False,
+                "unfurl_media": False,
+            },
+            timeout=15,
+        ).json()
+        if not posted.get("ok") or not posted.get("ts"):
+            return {
+                **notification,
+                "channel": notification.get("channel") or channel,
+                "status": "failed",
+                "error": posted.get("error", "Slack post failed"),
+            }
+
+        permalink = _slack_permalink(
+            token,
+            posted.get("channel") or notification.get("channel") or channel,
+            posted["ts"],
+        )
+        result = {
+            **notification,
+            "channel": posted.get("channel") or notification.get("channel") or channel,
+            "status": "sent",
+            "sentAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "slackTs": posted["ts"],
+            "error": None,
+        }
+        if permalink:
+            result["permalink"] = permalink
+        return result
+    except Exception as exc:
+        return {
+            **notification,
+            "channel": notification.get("channel") or channel,
+            "status": "failed",
+            "error": str(exc),
+        }
+
+
+def _slack_permalink(token: str, channel: str, message_ts: str) -> str | None:
+    import httpx
+
+    result = httpx.post(
+        "https://slack.com/api/chat.getPermalink",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json; charset=utf-8",
+        },
+        json={"channel": channel, "message_ts": message_ts},
+        timeout=15,
+    ).json()
+    if result.get("ok"):
+        return result.get("permalink")
+    return None
