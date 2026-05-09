@@ -1,4 +1,4 @@
-import { readMemory, writeMemory } from "@/lib/tensorlake";
+import { readMemory, runPythonIncidentCycle, writeMemory } from "@/lib/tensorlake";
 import { searchContext } from "@/lib/nia";
 import { classify } from "@/lib/llm";
 import { runInvestigator } from "./investigator";
@@ -10,6 +10,10 @@ export async function runIncidentCommander(
   incidentId: string,
   alert: Alert
 ): Promise<AgentMemory> {
+  if ((process.env.TENSORLAKE_EXECUTION_MODE ?? "python") === "python") {
+    return runPythonIncidentCycle(incidentId, alert);
+  }
+
   const prior = await readMemory(incidentId);
   const cycleCount = (prior?.cycleCount ?? 0) + 1;
 
