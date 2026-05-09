@@ -198,6 +198,11 @@ export function ActivityFeed({
               Alert inject in {countdown}s
             </span>
           )}
+          {(trigger.error || injector.error) && (
+            <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-600 ring-1 ring-inset ring-rose-200">
+              Agent trigger failed
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {isLive && (
@@ -291,6 +296,11 @@ export function ActivityFeed({
               );
             })}
           </ul>
+        )}
+        {(trigger.error || injector.error) && (
+          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            {trigger.error || injector.error}
+          </div>
         )}
       </div>
 

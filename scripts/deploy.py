@@ -21,14 +21,25 @@ _user_scripts = Path(site.getusersitepackages()).parent / "Scripts"
 _tl = shutil.which("tl") or str(_user_scripts / "tl.exe")
 
 SECRETS = [
+    "TENSORLAKE_API_KEY",
     "NIA_API_KEY",
     "OPENAI_API_KEY",
     "TENSORLAKE_MEMORY_SANDBOX_ID",
 ]
 
 
+def display_cmd(cmd: list[str]) -> str:
+    safe = []
+    for part in cmd:
+        if any(part.startswith(f"{key}=") for key in SECRETS):
+            safe.append(part.split("=", 1)[0] + "=<redacted>")
+        else:
+            safe.append(part)
+    return " ".join(safe)
+
+
 def run(cmd: list[str]) -> None:
-    print(f"$ {' '.join(cmd)}")
+    print(f"$ {display_cmd(cmd)}")
     env = os.environ.copy()
     env["PATH"] = str(_user_scripts) + os.pathsep + env.get("PATH", "")
     subprocess.run(cmd, check=True, shell=(sys.platform == "win32"), env=env)
@@ -59,7 +70,7 @@ def main() -> None:
     print("\n--- Registering cron schedule ---")
     run(["python", str(Path(__file__).parent / "register_cron.py")])
 
-    print("\n✓ Deploy complete. Agent will fire every 2 minutes.")
+    print("\nOK Deploy complete. Agent will fire every 2 minutes.")
 
 
 if __name__ == "__main__":
