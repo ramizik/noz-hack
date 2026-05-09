@@ -110,6 +110,13 @@ export interface DerivedTimelineEvent {
 
 export type IncidentPhaseStep = "detected" | "triaged" | "contained" | "resolved";
 
+export interface MonitoringMemory {
+  status: "all_clear";
+  message: string;
+  lastCheckedAt: string;
+  cycleCount: number;
+}
+
 export interface AgentStatusResponse {
   incidents: AgentMemory[];
   agent: AgentSummary;
@@ -118,4 +125,7 @@ export interface AgentStatusResponse {
   agentStatus: "active" | "sleeping";
   nextCycleInSeconds: number;
   phase: IncidentPhaseStep;
+  monitoringStatus: "all_clear" | "incident" | "idle";
+  monitoringMessage: string | null;
+  monitoringLastCheckedAt: string | null;
 }
