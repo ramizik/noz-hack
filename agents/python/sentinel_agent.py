@@ -43,57 +43,119 @@ sentinel_image = Image().run(
     ],
 )
 def sentinel_agent_cycle() -> dict:
-    """Entry point: one full incident response cycle."""
+    """Entry point: one full agent cycle — monitoring or incident response."""
     return asyncio.run(_cycle())
 
 
-# ---------------------------------------------------------------------------
-# Core cycle
-# ---------------------------------------------------------------------------
-
 async def _cycle() -> dict:
     from tensorlake.sandbox import AsyncSandbox
-    from openai import OpenAI
 
     sandbox_id = os.environ["TENSORLAKE_MEMORY_SANDBOX_ID"]
     sb = await AsyncSandbox.connect(sandbox_id)
 
-    # Resume if suspended
     info = await sb.info()
     if str(info.status).lower() in ("suspended", "suspending"):
         print("[sentinel] Resuming sandbox...", flush=True)
         await sb.resume()
 
-    # Ensure /memory directory exists
     await sb.run("mkdir", ["-p", MEMORY_DIR])
 
-    # Read prior memory
+    # Check for pending alert flag
+    alert_data = None
+    try:
+        raw = await sb.read_file(f"{MEMORY_DIR}/pending_alert.json")
+        alert_data = json.loads(raw.value.decode("utf-8"))
+        await sb.run("rm", ["-f", f"{MEMORY_DIR}/pending_alert.json"])
+        print("[sentinel] Alert flag found — switching to incident mode", flush=True)
+    except Exception:
+        pass
+
+    if alert_data:
+        return await _incident_cycle(sb, alert_data)
+    else:
+        return await _monitoring_cycle(sb)
+
+
+async def _monitoring_cycle(sb) -> dict:
+    from openai import OpenAI
+
+    print("[sentinel] Monitoring mode — scanning logs", flush=True)
+
+    normal_logs = []
+    try:
+        raw = await sb.read_file(f"{MEMORY_DIR}/normal_logs.json")
+        normal_logs = json.loads(raw.value.decode("utf-8"))
+    except Exception:
+        normal_logs = [
+            {"source": "DNS", "message": "prod-api.corp.local queries nominal"},
+            {"source": "FW", "message": "No anomalous outbound connections"},
+            {"source": "IDS", "message": "No signatures matched in last 5 minutes"},
+        ]
+
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    resp = client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a security monitoring agent. "
+                    "Scan the provided network logs and report status. "
+                    "Keep response under 30 words."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"Network logs (last 5 minutes): {json.dumps(normal_logs[:5])}\nReport status:",
+            },
+        ],
+    )
+    message = resp.choices[0].message.content.strip()
+
+    state = {
+        "status": "all_clear",
+        "message": message,
+        "lastCheckedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "cycleCount": 1,
+    }
+
+    await sb.write_file(
+        f"{MEMORY_DIR}/monitoring.json",
+        json.dumps(state, indent=2).encode("utf-8"),
+    )
+
+    print(f"[sentinel] Monitoring cycle done. Status: all_clear. Message: {message}", flush=True)
+    return state
+
+
+async def _incident_cycle(sb, alert: dict) -> dict:
+    from openai import OpenAI
+
     prior: dict | None = None
     try:
         raw = await sb.read_file(f"{MEMORY_DIR}/{INCIDENT_ID}.json")
         prior = json.loads(raw.value.decode("utf-8"))
     except Exception:
-        pass  # First cycle — no prior state
+        pass
 
     cycle_count = int((prior or {}).get("cycleCount", 0)) + 1
-    print(f"[sentinel] Cycle {cycle_count} starting", flush=True)
+    print(f"[sentinel] Incident cycle {cycle_count} starting", flush=True)
 
-    # Nia retrieval
     query = (
-        f"{SEED_ALERT['type']} {SEED_ALERT['affectedSystem']} "
+        f"{alert.get('type', 'security_incident')} {alert.get('affectedSystem', 'host')} "
         "incident response runbook data exfiltration"
     )
     nia_results = _nia_search(query)
     print(f"[sentinel] Nia returned {len(nia_results)} results", flush=True)
 
-    # OpenAI classification + task/evidence generation
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    classification = _classify(client, SEED_ALERT, nia_results, prior)
+    classification = _classify(client, alert, nia_results, prior)
     ts = int(time.time() * 1000)
-    tasks = _gen_tasks(client, INCIDENT_ID, SEED_ALERT, nia_results, cycle_count, ts)
-    evidence = _gen_evidence(client, INCIDENT_ID, SEED_ALERT, nia_results, cycle_count, ts)
+    tasks = _gen_tasks(client, INCIDENT_ID, alert, nia_results, cycle_count, ts)
+    evidence = _gen_evidence(client, INCIDENT_ID, alert, nia_results, cycle_count, ts)
 
-    # Build updated state
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     state: dict = {
         "incidentId": INCIDENT_ID,
         "severity": classification["severity"],
@@ -101,29 +163,25 @@ async def _cycle() -> dict:
         "tasks": [*(prior or {}).get("tasks", []), *tasks],
         "evidence": [*(prior or {}).get("evidence", []), *evidence],
         "cycleCount": cycle_count,
-        "lastCycleAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "lastCycleAt": now,
+        "createdAt": (prior or {}).get("createdAt", now),
+        "alert": alert,
     }
     if cycle_count >= 2:
         state["handoffSummary"] = _gen_handoff(client, state, nia_results)
 
-    # Write memory back to sandbox
     await sb.write_file(
         f"{MEMORY_DIR}/{INCIDENT_ID}.json",
         json.dumps(state, indent=2).encode("utf-8"),
     )
 
     print(
-        f"[sentinel] Cycle {cycle_count} done. "
-        f"Severity: {state['severity']}. "
-        f"Tasks: {len(state['tasks'])}. Evidence: {len(state['evidence'])}.",
+        f"[sentinel] Incident cycle {cycle_count} done. "
+        f"Severity: {state['severity']}. Tasks: {len(state['tasks'])}.",
         flush=True,
     )
     return state
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _nia_search(query: str) -> list:
     import httpx
@@ -153,10 +211,7 @@ def _classify(client, alert: dict, nia: list, prior: dict | None) -> dict:
         temperature=0,
         response_format={"type": "json_object"},
         messages=[
-            {
-                "role": "system",
-                "content": "Senior security incident commander. Return JSON only.",
-            },
+            {"role": "system", "content": "Senior security incident commander. Return JSON only."},
             {
                 "role": "user",
                 "content": (
@@ -171,14 +226,7 @@ def _classify(client, alert: dict, nia: list, prior: dict | None) -> dict:
     return json.loads(resp.choices[0].message.content)
 
 
-def _gen_tasks(
-    client,
-    incident_id: str,
-    alert: dict,
-    nia: list,
-    cycle: int,
-    ts: int,
-) -> list:
+def _gen_tasks(client, incident_id: str, alert: dict, nia: list, cycle: int, ts: int) -> list:
     resp = client.chat.completions.create(
         model="gpt-4o",
         temperature=0,
@@ -210,14 +258,7 @@ def _gen_tasks(
     ]
 
 
-def _gen_evidence(
-    client,
-    incident_id: str,
-    alert: dict,
-    nia: list,
-    cycle: int,
-    ts: int,
-) -> list:
+def _gen_evidence(client, incident_id: str, alert: dict, nia: list, cycle: int, ts: int) -> list:
     resp = client.chat.completions.create(
         model="gpt-4o",
         temperature=0,
