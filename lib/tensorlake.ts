@@ -11,6 +11,16 @@ function client(): SandboxClient {
 
 async function memorySandbox() {
   const c = client();
+
+  // Use pre-provisioned sandbox ID if set — skips list() lookup
+  const sandboxId = process.env.TENSORLAKE_SANDBOX_ID;
+  if (sandboxId) {
+    const sb = c.connect(sandboxId);
+    await sb.run("mkdir -p /memory").catch(() => null);
+    return sb;
+  }
+
+  // Fallback: find or create by name
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sandboxes = (await c.list()) as any[];
   const existing = sandboxes.find((s) => s.name === SANDBOX_NAME);
