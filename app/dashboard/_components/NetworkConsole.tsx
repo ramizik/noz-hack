@@ -7,7 +7,8 @@ import type { AgentMemory } from "@/lib/types";
 import { useTriggerCycle, useInjectAlert } from "../_hooks/useTriggerCycle";
 import { useLiveLogStream, type LiveLog, type StreamPhase } from "../_hooks/useLiveLogStream";
 
-const COUNTDOWN_SECONDS = 15;
+const COUNTDOWN_SECONDS = 8;
+const AUTO_COUNTDOWN_DELAY_MS = 10000;
 
 type DemoPhase = "idle" | "monitoring" | "countdown" | "incident";
 
@@ -51,6 +52,17 @@ export function NetworkConsole({ memory, monitoringStatus, onCycleComplete, onIn
       setCountdown(COUNTDOWN_SECONDS);
     }
   }, [monitoringStatus, demoPhase]);
+
+  useEffect(() => {
+    if (demoPhase !== "monitoring") return;
+    const id = setTimeout(() => {
+      setDemoPhase((cur) => {
+        if (cur === "monitoring") { setCountdown(COUNTDOWN_SECONDS); return "countdown"; }
+        return cur;
+      });
+    }, AUTO_COUNTDOWN_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [demoPhase]);
 
   useEffect(() => {
     if (monitoringStatus === "incident" && demoPhase !== "incident") {

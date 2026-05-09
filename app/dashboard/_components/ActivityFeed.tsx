@@ -6,7 +6,8 @@ import { useTriggerCycle, useInjectAlert } from "../_hooks/useTriggerCycle";
 import { useLiveLogStream, type LiveLog, type StreamPhase } from "../_hooks/useLiveLogStream";
 import { buildConsoleLogs } from "@/lib/incidentView";
 
-const COUNTDOWN_SECONDS = 15;
+const COUNTDOWN_SECONDS = 8;
+const AUTO_COUNTDOWN_DELAY_MS = 10000; // start countdown 10s after monitoring begins regardless of agent
 
 type DemoPhase = "idle" | "monitoring" | "countdown" | "incident";
 
@@ -103,12 +104,27 @@ export function ActivityFeed({
   const injector = useInjectAlert(onCycleComplete);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Transition to countdown when agent confirms all_clear OR after fixed delay
   useEffect(() => {
     if (monitoringStatus === "all_clear" && demoPhase === "monitoring") {
       setDemoPhase("countdown");
       setCountdown(COUNTDOWN_SECONDS);
     }
   }, [monitoringStatus, demoPhase]);
+
+  useEffect(() => {
+    if (demoPhase !== "monitoring") return;
+    const id = setTimeout(() => {
+      setDemoPhase((cur) => {
+        if (cur === "monitoring") {
+          setCountdown(COUNTDOWN_SECONDS);
+          return "countdown";
+        }
+        return cur;
+      });
+    }, AUTO_COUNTDOWN_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [demoPhase]);
 
   useEffect(() => {
     if (monitoringStatus === "incident" && demoPhase !== "incident") {
