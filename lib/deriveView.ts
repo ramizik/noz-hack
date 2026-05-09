@@ -2,6 +2,7 @@ import type {
   AgentMemory,
   DerivedTimelineEvent,
   IncidentPhaseStep,
+  MonitoringMemory,
   NiaRetrieval,
 } from "./types";
 
@@ -100,22 +101,45 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
 
   // Cycle 1 events
   events.push({
+    id: `${memory.incidentId}-wake1`,
+    eventType: "agent_wake",
+    summary: "Tensorlake invoked Sentinel agent cycle 1",
+    niaInvolved: false,
+    systems: ["tensorlake", "agent"],
+    timestamp: base,
+    cycle: 1,
+  });
+
+  events.push({
+    id: `${memory.incidentId}-mem-read1`,
+    eventType: "memory_read",
+    summary: "Tensorlake memory checked for prior incident context",
+    niaInvolved: false,
+    systems: ["tensorlake"],
+    timestamp: base,
+    cycle: 1,
+  });
+
+  events.push({
     id: `${memory.incidentId}-alert`,
     eventType: "alert_ingested",
     summary: `Alert ingested — ${memory.alert?.details ?? "unusual activity detected on " + (memory.alert?.affectedSystem ?? "prod host")}`,
     niaInvolved: false,
+    systems: ["agent", "tensorlake"],
     timestamp: memory.alert?.timestamp ?? base,
     cycle: 1,
   });
 
-  if (niaEvidence.length > 0) {
+  for (const ev of niaEvidence) {
+    const parsed = parsePath(ev.niaSourceRef!);
     events.push({
-      id: `${memory.incidentId}-nia1`,
+      id: `${memory.incidentId}-nia-${ev.id}`,
       eventType: "nia_search",
-      summary: `Nia search executed — ${niaEvidence[0].niaSourceRef} retrieved`,
+      summary: `Nia retrieved ${parsed.title} · ${parsed.section}`,
       niaInvolved: true,
-      timestamp: niaEvidence[0].timestamp,
-      cycle: 1,
+      systems: ["nia", "agent"],
+      timestamp: ev.timestamp,
+      cycle: memory.cycleCount >= 2 && memory.evidence.indexOf(ev) >= Math.floor(memory.evidence.length / 2) ? 2 : 1,
     });
   }
 
@@ -124,6 +148,7 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
     eventType: "classify",
     summary: `Incident classified — ${memory.classification.replace(/_/g, " ")} · Severity ${memory.severity.toUpperCase()}`,
     niaInvolved: niaEvidence.length > 0,
+    systems: niaEvidence.length > 0 ? ["agent", "nia"] : ["agent"],
     timestamp: memory.evidence[0]?.timestamp ?? base,
     cycle: 1,
   });
@@ -134,6 +159,7 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
       eventType: "tasks_created",
       summary: `${memory.tasks.length} response tasks generated`,
       niaInvolved: false,
+      systems: ["agent"],
       timestamp: memory.evidence[memory.evidence.length - 1]?.timestamp ?? base,
       cycle: 1,
     });
@@ -142,8 +168,9 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
   events.push({
     id: `${memory.incidentId}-mem1`,
     eventType: "memory_write",
-    summary: "Memory written — cycle 1 complete · Tensorlake sandbox updated",
+    summary: "Tensorlake memory written — cycle 1 incident state persisted",
     niaInvolved: false,
+    systems: ["tensorlake"],
     timestamp: memory.lastCycleAt,
     cycle: 1,
   });
@@ -151,10 +178,21 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
   // Cycle 2 events
   if (memory.cycleCount >= 2) {
     events.push({
+      id: `${memory.incidentId}-wake2`,
+      eventType: "agent_wake",
+      summary: "Tensorlake invoked Sentinel agent cycle 2",
+      niaInvolved: false,
+      systems: ["tensorlake", "agent"],
+      timestamp: memory.lastCycleAt,
+      cycle: 2,
+    });
+
+    events.push({
       id: `${memory.incidentId}-mem-read`,
       eventType: "memory_read",
-      summary: "Memory read — prior context loaded from Tensorlake sandbox",
+      summary: "Tensorlake memory read — prior context loaded before acting",
       niaInvolved: false,
+      systems: ["tensorlake"],
       timestamp: memory.lastCycleAt,
       cycle: 2,
     });
@@ -167,6 +205,7 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
           eventType: "new_evidence",
           summary: `New evidence — [${ev.source}] ${ev.content}`,
           niaInvolved: false,
+          systems: ["agent"],
           timestamp: ev.timestamp,
           cycle: 2,
         });
@@ -179,6 +218,7 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
         eventType: "escalate",
         summary: "Severity escalated to CRITICAL — exfiltration volume confirmed",
         niaInvolved: false,
+        systems: ["agent"],
         timestamp: memory.lastCycleAt,
         cycle: 2,
       });
@@ -188,8 +228,9 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
       events.push({
         id: `${memory.incidentId}-handoff`,
         eventType: "handoff",
-        summary: "Shift handoff summary generated — cycle 2 complete",
-        niaInvolved: false,
+        summary: "Shift handoff summary generated from Tensorlake memory and Nia context",
+        niaInvolved: true,
+        systems: ["agent", "tensorlake", "nia"],
         timestamp: memory.lastCycleAt,
         cycle: 2,
       });
@@ -197,6 +238,42 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
   }
 
   return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+}
+
+export function deriveMonitoringTimeline(
+  monitoring: MonitoringMemory | null
+): DerivedTimelineEvent[] {
+  if (!monitoring) return [];
+
+  return [
+    {
+      id: `monitoring-wake-${monitoring.lastCheckedAt}`,
+      eventType: "agent_wake",
+      summary: "Tensorlake invoked Sentinel monitoring cycle",
+      niaInvolved: false,
+      systems: ["tensorlake", "agent"],
+      timestamp: monitoring.lastCheckedAt,
+      cycle: monitoring.cycleCount,
+    },
+    {
+      id: `monitoring-check-${monitoring.lastCheckedAt}`,
+      eventType: "monitoring_check",
+      summary: `Monitoring check completed — ${monitoring.message}`,
+      niaInvolved: false,
+      systems: ["agent"],
+      timestamp: monitoring.lastCheckedAt,
+      cycle: monitoring.cycleCount,
+    },
+    {
+      id: `monitoring-write-${monitoring.lastCheckedAt}`,
+      eventType: "memory_write",
+      summary: "Tensorlake memory written — all-clear monitoring state persisted",
+      niaInvolved: false,
+      systems: ["tensorlake"],
+      timestamp: monitoring.lastCheckedAt,
+      cycle: monitoring.cycleCount,
+    },
+  ];
 }
 
 const CRON_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes

@@ -9,6 +9,7 @@ export type IncidentPhase =
 export type IncidentStatus = "open" | "in_progress" | "escalated" | "resolved";
 export type TaskStatus = "pending" | "in_progress" | "done";
 export type TaskType = "investigate" | "contain" | "communicate" | "escalate";
+export type ActionStatus = "proposed" | "executing" | "completed";
 
 export interface Incident {
   id: string;
@@ -38,6 +39,19 @@ export interface Evidence {
   timestamp: string;
 }
 
+export interface AgentAction {
+  id: string;
+  incidentId: string;
+  cycle: number;
+  proposedBy: string;
+  actionType: "isolate_host" | "block_destination" | "request_logs" | "notify_lead" | "escalate";
+  status: ActionStatus;
+  target: string;
+  description: string;
+  groundedSource: string;
+  timestamp: string;
+}
+
 export interface TimelineEvent {
   id: string;
   incidentId: string;
@@ -52,6 +66,7 @@ export interface AgentMemory {
   classification: string;
   tasks: Task[];
   evidence: Evidence[];
+  actions?: AgentAction[];
   cycleCount: number;
   lastCycleAt: string;
   createdAt?: string;
@@ -93,7 +108,10 @@ export interface NiaRetrieval {
 export interface DerivedTimelineEvent {
   id: string;
   eventType:
+    | "agent_wake"
+    | "monitoring_check"
     | "alert_ingested"
+    | "alert_injected"
     | "nia_search"
     | "classify"
     | "tasks_created"
@@ -104,6 +122,7 @@ export interface DerivedTimelineEvent {
     | "handoff";
   summary: string;
   niaInvolved: boolean;
+  systems?: Array<"agent" | "tensorlake" | "nia">;
   timestamp: string;
   cycle: number;
 }

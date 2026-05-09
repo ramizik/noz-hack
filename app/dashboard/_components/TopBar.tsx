@@ -11,9 +11,19 @@ type Props = {
   agentStatus: "active" | "sleeping";
   nextCycleInSeconds: number;
   monitoringStatus: "all_clear" | "incident" | "idle";
+  onResetDemo: () => void;
+  resetPending: boolean;
 };
 
-export function TopBar({ memory, lastPoll, agentStatus, nextCycleInSeconds, monitoringStatus }: Props) {
+export function TopBar({
+  memory,
+  lastPoll,
+  agentStatus,
+  nextCycleInSeconds,
+  monitoringStatus,
+  onResetDemo,
+  resetPending,
+}: Props) {
   const [countdown, setCountdown] = useState(nextCycleInSeconds);
 
   useEffect(() => { setCountdown(nextCycleInSeconds); }, [nextCycleInSeconds]);
@@ -61,6 +71,14 @@ export function TopBar({ memory, lastPoll, agentStatus, nextCycleInSeconds, moni
 
       {/* Agent status */}
       <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={onResetDemo}
+          disabled={resetPending}
+          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-50 disabled:opacity-60"
+        >
+          {resetPending ? "Resetting..." : "Reset Demo"}
+        </button>
         {lastPoll && (
           <span className="hidden tabular-nums text-[11px] text-slate-400 sm:inline">
             {lastPoll.toLocaleTimeString()}

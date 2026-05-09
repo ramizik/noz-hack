@@ -17,6 +17,11 @@ type Props = {
   monitoringStatus: "all_clear" | "incident" | "idle";
   onCycleComplete?: () => void;
   onIncidentDetected?: () => void;
+  hidden?: boolean;
+  streamPaused?: boolean;
+  onHide?: () => void;
+  onShow?: () => void;
+  onToggleStream?: () => void;
 };
 
 function formatTs(iso: string): string {
@@ -30,7 +35,17 @@ function formatTs(iso: string): string {
   );
 }
 
-export function NetworkConsole({ memory, monitoringStatus, onCycleComplete, onIncidentDetected }: Props) {
+export function NetworkConsole({
+  memory,
+  monitoringStatus,
+  onCycleComplete,
+  onIncidentDetected,
+  hidden = false,
+  streamPaused = false,
+  onHide,
+  onShow,
+  onToggleStream,
+}: Props) {
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("idle");
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -41,7 +56,7 @@ export function NetworkConsole({ memory, monitoringStatus, onCycleComplete, onIn
     : demoPhase === "countdown" || demoPhase === "incident" ? "incident"
     : "idle";
 
-  const { logs: liveLogs, clear } = useLiveLogStream(streamPhase);
+  const { logs: liveLogs, clear } = useLiveLogStream(streamPhase, streamPaused);
   const trigger = useTriggerCycle(onCycleComplete);
   const injector = useInjectAlert(onCycleComplete);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -115,6 +130,45 @@ export function NetworkConsole({ memory, monitoringStatus, onCycleComplete, onIn
 
   const isLive = demoPhase !== "idle";
 
+  if (hidden) {
+    return (
+      <div className="flex h-full flex-col justify-between rounded-2xl border border-dashed border-slate-700 bg-slate-950/80 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                streamPaused ? "bg-amber-400" : isLive ? "animate-pulse bg-emerald-400" : "bg-slate-600"
+              }`}
+            />
+            <span className="font-mono text-xs text-slate-400">network-console hidden</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {isLive && (
+              <button
+                type="button"
+                onClick={onToggleStream}
+                className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-300 transition hover:bg-white/[0.08]"
+              >
+                {streamPaused ? "Resume Logs" : "Stop Logs"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onShow}
+              className="rounded-md bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-slate-100 transition hover:bg-white/15"
+            >
+              Show Logs
+            </button>
+          </div>
+        </div>
+        <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+          <span className="tabular-nums">{allLogs.length} events</span>
+          {streamPaused && <span className="ml-2 text-amber-300">generation stopped</span>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/60 to-slate-950/80">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-black/40 px-4 py-3">
@@ -143,6 +197,19 @@ export function NetworkConsole({ memory, monitoringStatus, onCycleComplete, onIn
           {isLive && (
             <button
               type="button"
+              onClick={onToggleStream}
+              className={`rounded-md border px-2.5 py-1 text-[11px] transition ${
+                streamPaused
+                  ? "border-amber-400/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/15"
+                  : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"
+              }`}
+            >
+              {streamPaused ? "Resume Logs" : "Stop Logs"}
+            </button>
+          )}
+          {isLive && (
+            <button
+              type="button"
               onClick={clear}
               className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-300 transition hover:bg-white/[0.08]"
             >
@@ -159,6 +226,13 @@ export function NetworkConsole({ memory, monitoringStatus, onCycleComplete, onIn
               {trigger.pending ? "⏳ Starting…" : "▶ Start Monitoring"}
             </button>
           )}
+          <button
+            type="button"
+            onClick={onHide}
+            className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-300 transition hover:bg-white/[0.08]"
+          >
+            Hide
+          </button>
         </div>
       </div>
 

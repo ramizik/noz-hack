@@ -154,6 +154,7 @@ async def _incident_cycle(sb, alert: dict) -> dict:
     ts = int(time.time() * 1000)
     tasks = _gen_tasks(client, INCIDENT_ID, alert, nia_results, cycle_count, ts)
     evidence = _gen_evidence(client, INCIDENT_ID, alert, nia_results, cycle_count, ts)
+    actions = _gen_actions(INCIDENT_ID, alert, nia_results, cycle_count, ts, prior)
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     state: dict = {
@@ -162,6 +163,7 @@ async def _incident_cycle(sb, alert: dict) -> dict:
         "classification": classification["classification"],
         "tasks": [*(prior or {}).get("tasks", []), *tasks],
         "evidence": [*(prior or {}).get("evidence", []), *evidence],
+        "actions": [*(prior or {}).get("actions", []), *actions],
         "cycleCount": cycle_count,
         "lastCycleAt": now,
         "createdAt": (prior or {}).get("createdAt", now),
@@ -288,6 +290,90 @@ def _gen_evidence(client, incident_id: str, alert: dict, nia: list, cycle: int, 
             "timestamp": now,
         }
         for i, e in enumerate(raw[:2])
+    ]
+
+
+def _source_ref(nia: list, fallback: str) -> str:
+    if not nia:
+        return fallback
+    first = nia[0]
+    if isinstance(first, dict):
+        return (
+            first.get("path")
+            or first.get("sourcePath")
+            or first.get("title")
+            or first.get("name")
+            or fallback
+        )
+    return fallback
+
+
+def _gen_actions(
+    incident_id: str,
+    alert: dict,
+    nia: list,
+    cycle: int,
+    ts: int,
+    prior: dict | None,
+) -> list:
+    source = _source_ref(nia, "data/runbooks/db_exfiltration.md#immediate-containment")
+    host = alert.get("affectedSystem", "prod-db-01")
+    destination = "203.0.113.42"
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    if cycle >= 2:
+        return [
+            {
+                "id": f"{incident_id}-action-{ts}-0",
+                "incidentId": incident_id,
+                "cycle": cycle,
+                "proposedBy": "escalation-agent",
+                "actionType": "escalate",
+                "status": "completed",
+                "target": "tier-2-on-call",
+                "description": "Escalated confirmed high-volume exfiltration to Tier-2 on-call and prepared shift handoff.",
+                "groundedSource": source,
+                "timestamp": now,
+            }
+        ]
+
+    return [
+        {
+            "id": f"{incident_id}-action-{ts}-0",
+            "incidentId": incident_id,
+            "cycle": cycle,
+            "proposedBy": "containment-agent",
+            "actionType": "isolate_host",
+            "status": "executing",
+            "target": host,
+            "description": f"Isolate {host} from non-whitelisted outbound traffic while preserving database service state.",
+            "groundedSource": source,
+            "timestamp": now,
+        },
+        {
+            "id": f"{incident_id}-action-{ts}-1",
+            "incidentId": incident_id,
+            "cycle": cycle,
+            "proposedBy": "containment-agent",
+            "actionType": "block_destination",
+            "status": "completed",
+            "target": destination,
+            "description": f"Block outbound connections from {host} to external destination {destination}.",
+            "groundedSource": source,
+            "timestamp": now,
+        },
+        {
+            "id": f"{incident_id}-action-{ts}-2",
+            "incidentId": incident_id,
+            "cycle": cycle,
+            "proposedBy": "investigation-agent",
+            "actionType": "request_logs",
+            "status": "proposed",
+            "target": "firewall-egress-logs",
+            "description": "Request five-minute firewall and proxy egress logs around the anomalous transfer window.",
+            "groundedSource": source,
+            "timestamp": now,
+        },
     ]
 
 

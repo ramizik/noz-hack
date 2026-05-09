@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { NiaRetrieval, AgentMemory } from "@/lib/types";
 import { useTriggerCycle, useInjectAlert } from "../_hooks/useTriggerCycle";
 import { useLiveLogStream, type LiveLog, type StreamPhase } from "../_hooks/useLiveLogStream";
-import { buildConsoleLogs } from "@/lib/incidentView";
 
 const COUNTDOWN_SECONDS = 8;
 const AUTO_COUNTDOWN_DELAY_MS = 10000; // start countdown 10s after monitoring begins regardless of agent
@@ -12,16 +10,18 @@ const AUTO_COUNTDOWN_DELAY_MS = 10000; // start countdown 10s after monitoring b
 type DemoPhase = "idle" | "monitoring" | "countdown" | "incident";
 
 type Props = {
-  memory: AgentMemory | null;
-  niaRetrievals: NiaRetrieval[];
   monitoringStatus: "all_clear" | "incident" | "idle";
   onCycleComplete?: () => void;
   onIncidentDetected?: () => void;
+  resetSignal?: number;
+  hidden?: boolean;
+  streamPaused?: boolean;
+  onHide?: () => void;
+  onShow?: () => void;
+  onToggleStream?: () => void;
 };
 
 type LogEntry = LiveLog & { kind: "log" };
-type NiaEntry = { kind: "nia"; id: string; ts: string; retrieval: NiaRetrieval };
-type FeedEntry = LogEntry | NiaEntry;
 
 const LEVEL_STYLES: Record<LiveLog["level"], { text: string; bg: string; label: string }> = {
   AGENT:    { text: "text-violet-700", bg: "bg-violet-100",  label: "Agent"    },
@@ -38,56 +38,16 @@ function formatTs(iso: string): string {
     .join(":");
 }
 
-function NiaCard({ retrieval }: { retrieval: NiaRetrieval }) {
-  const parts = retrieval.sourcePath.split("/");
-  return (
-    <div className="my-2 rounded-lg border border-teal-200 bg-teal-50 p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-teal-600">
-            Nia · Knowledge Retrieved
-          </span>
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest ring-1 ring-inset
-              ${retrieval.cycle === 1
-                ? "bg-teal-100 text-teal-700 ring-teal-300"
-                : "bg-violet-100 text-violet-700 ring-violet-300"}`}
-          >
-            Cycle {retrieval.cycle}
-          </span>
-        </div>
-        <span className="font-mono text-[10px] text-slate-400">{formatTs(retrieval.timestamp)}</span>
-      </div>
-
-      <p className="text-sm font-semibold text-slate-800">{retrieval.documentTitle}</p>
-      <p className="text-xs text-teal-600">§ {retrieval.section}</p>
-
-      <p className="mt-1 flex flex-wrap items-center gap-0.5 font-mono text-[10px] text-slate-400">
-        {parts.map((part, i) => (
-          <span key={i} className="flex items-center gap-0.5">
-            {i > 0 && <span>/</span>}
-            <span className={i === parts.length - 1 ? "font-medium text-teal-600" : ""}>{part}</span>
-          </span>
-        ))}
-      </p>
-
-      <div className="mt-2 rounded border border-slate-200 bg-white px-2.5 py-1.5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Query</p>
-        <p className="mt-0.5 font-mono text-[11px] text-slate-600">&ldquo;{retrieval.queryUsed}&rdquo;</p>
-      </div>
-
-      <p className="mt-2 text-[12px] leading-relaxed text-slate-600">{retrieval.excerpt}</p>
-    </div>
-  );
-}
-
 export function ActivityFeed({
-  memory,
-  niaRetrievals,
   monitoringStatus,
   onCycleComplete,
   onIncidentDetected,
+  resetSignal = 0,
+  hidden = false,
+  streamPaused = false,
+  onHide,
+  onShow,
+  onToggleStream,
 }: Props) {
   const [demoPhase, setDemoPhase] = useState<DemoPhase>("idle");
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
@@ -99,10 +59,17 @@ export function ActivityFeed({
     : demoPhase === "countdown" || demoPhase === "incident" ? "incident"
     : "idle";
 
-  const { logs: liveLogs, clear } = useLiveLogStream(streamPhase);
+  const { logs: liveLogs, clear } = useLiveLogStream(streamPhase, streamPaused);
   const trigger = useTriggerCycle(onCycleComplete);
   const injector = useInjectAlert(onCycleComplete);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    injectedRef.current = false;
+    setDemoPhase("idle");
+    setCountdown(COUNTDOWN_SECONDS);
+    clear();
+  }, [resetSignal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Transition to countdown when agent confirms all_clear OR after fixed delay
   useEffect(() => {
@@ -152,16 +119,9 @@ export function ActivityFeed({
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [demoPhase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const agentLogs: LogEntry[] = buildConsoleLogs(memory).map((l) => ({ ...l, kind: "log" as const }));
   const liveEntries: LogEntry[] = liveLogs.map((l) => ({ ...l, kind: "log" as const }));
-  const niaEntries: NiaEntry[] = niaRetrievals.map((r) => ({
-    kind: "nia" as const,
-    id: r.id,
-    ts: r.timestamp,
-    retrieval: r,
-  }));
 
-  const feed: FeedEntry[] = [...liveEntries, ...agentLogs, ...niaEntries].sort(
+  const feed = liveEntries.sort(
     (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
   );
 
@@ -178,6 +138,45 @@ export function ActivityFeed({
 
   const isLive = demoPhase !== "idle";
 
+  if (hidden) {
+    return (
+      <div className="flex h-full flex-col justify-between rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                streamPaused ? "bg-amber-400" : isLive ? "animate-pulse bg-emerald-500" : "bg-slate-300"
+              }`}
+            />
+            <span className="text-sm font-semibold text-slate-600">Network Activity Hidden</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {isLive && (
+              <button
+                type="button"
+                onClick={onToggleStream}
+                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+              >
+                {streamPaused ? "Resume Logs" : "Stop Logs"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onShow}
+              className="rounded-md bg-slate-800 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-slate-700"
+            >
+              Show Logs
+            </button>
+          </div>
+        </div>
+        <div className="text-[11px] text-slate-400">
+          <span className="tabular-nums">{feed.length} events</span>
+          {streamPaused && <span className="ml-2 text-amber-600">generation stopped</span>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
@@ -188,7 +187,7 @@ export function ActivityFeed({
               isLive ? "animate-pulse bg-emerald-500" : "bg-slate-300"
             }`}
           />
-          <span className="text-sm font-semibold text-slate-700">Activity Feed</span>
+          <span className="text-sm font-semibold text-slate-700">Network Activity</span>
           {isLive && (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 ring-1 ring-inset ring-emerald-200">
               Live
@@ -201,6 +200,19 @@ export function ActivityFeed({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {isLive && (
+            <button
+              type="button"
+              onClick={onToggleStream}
+              className={`rounded-md border px-2.5 py-1 text-[11px] transition ${
+                streamPaused
+                  ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              {streamPaused ? "Resume Logs" : "Stop Logs"}
+            </button>
+          )}
           {isLive && (
             <button
               type="button"
@@ -220,6 +232,13 @@ export function ActivityFeed({
               {trigger.pending ? "Starting…" : "▶ Start Monitoring"}
             </button>
           )}
+          <button
+            type="button"
+            onClick={onHide}
+            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-500 transition hover:bg-slate-50"
+          >
+            Hide
+          </button>
         </div>
       </div>
 
@@ -230,20 +249,12 @@ export function ActivityFeed({
       >
         {feed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm text-slate-400">No activity yet</p>
+            <p className="text-sm text-slate-400">No network activity yet</p>
             <p className="mt-1 text-xs text-slate-300">Press Start Monitoring to begin</p>
           </div>
         ) : (
           <ul className="space-y-0.5">
             {feed.map((entry) => {
-              if (entry.kind === "nia") {
-                return (
-                  <li key={entry.id}>
-                    <NiaCard retrieval={entry.retrieval} />
-                  </li>
-                );
-              }
-
               const style = LEVEL_STYLES[entry.level];
               const isAgent = entry.level === "AGENT";
               const isCritical = entry.level === "CRITICAL";
@@ -285,7 +296,7 @@ export function ActivityFeed({
 
       {/* Footer */}
       <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-400">
-        <span>sentinelops · activity</span>
+        <span>sentinelops · network stream</span>
         <span className="tabular-nums">{feed.length} events</span>
       </div>
     </div>

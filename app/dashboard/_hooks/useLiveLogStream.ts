@@ -48,10 +48,9 @@ const SUSPICIOUS: Tpl[] = [
 const CRITICAL: Tpl[] = [
   { level: "CRITICAL", source: "SIEM", message: "ALERT INC-2026-001 — Exfiltration confirmed: 2.1 GB transferred over 8 min" },
   { level: "CRITICAL", source: "EDR", message: "Ransomware signature matched on prod-db-01 (MITRE ATT&CK T1041)" },
-  { level: "AGENT", source: "Sentinel", message: "Agent awakened — classifying incident INC-2026-001" },
   { level: "CRITICAL", source: "SIEM", message: "14 correlated events across prod-db-01, fileserver01, bastion-01" },
-  { level: "AGENT", source: "Sentinel", message: "Nia: retrieved runbooks/db-exfiltration.md + 2025-Q3-prod-db postmortem" },
-  { level: "AGENT", source: "Sentinel", message: "Classification: data_exfiltration · Severity: HIGH · writing to Tensorlake memory" },
+  { level: "ERROR", source: "FW", message: "Outbound block candidate identified for 185.220.101.45:443" },
+  { level: "CRITICAL", source: "SIEM", message: "Containment threshold exceeded for database subnet egress" },
 ];
 
 function makeLog(tpl: Tpl): LiveLog {
@@ -64,7 +63,7 @@ function makeLog(tpl: Tpl): LiveLog {
 
 export type StreamPhase = "idle" | "monitoring" | "incident";
 
-export function useLiveLogStream(streamPhase: StreamPhase) {
+export function useLiveLogStream(streamPhase: StreamPhase, paused = false) {
   const [logs, setLogs] = useState<LiveLog[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const normalIdx = useRef(0);
@@ -73,12 +72,14 @@ export function useLiveLogStream(streamPhase: StreamPhase) {
   const elapsed = useRef(0);
 
   useEffect(() => {
-    if (streamPhase === "idle") return;
-
     elapsed.current = 0;
     normalIdx.current = 0;
     suspIdx.current = 0;
     critIdx.current = 0;
+  }, [streamPhase]);
+
+  useEffect(() => {
+    if (streamPhase === "idle" || paused) return;
 
     function emit() {
       let tpl: Tpl;
@@ -111,7 +112,7 @@ export function useLiveLogStream(streamPhase: StreamPhase) {
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [streamPhase]);
+  }, [streamPhase, paused]);
 
   const clear = () => setLogs([]);
   return { logs, clear };

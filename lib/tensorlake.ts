@@ -42,3 +42,12 @@ export async function writeAlertFlag(alert: object): Promise<void> {
     Buffer.from(JSON.stringify(alert))
   );
 }
+
+export async function resetDemoMemory(): Promise<void> {
+  const sb = await getMemorySandbox();
+  await Promise.allSettled([
+    sb.deleteFile(`${MEMORY_DIR}/${INCIDENT_ID}.json`),
+    sb.deleteFile(`${MEMORY_DIR}/monitoring.json`),
+    sb.deleteFile(`${MEMORY_DIR}/pending_alert.json`),
+  ]);
+}

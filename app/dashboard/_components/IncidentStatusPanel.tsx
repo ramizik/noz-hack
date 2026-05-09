@@ -1,4 +1,7 @@
+"use client";
+
 import type { AgentMemory, IncidentPhaseStep } from "@/lib/types";
+import { useElapsed } from "../_hooks/useElapsed";
 import { PhaseTracker } from "./PhaseTracker";
 
 const SEV_STYLES: Record<string, { bg: string; text: string; ring: string }> = {
@@ -39,31 +42,60 @@ type Props = {
   phase: IncidentPhaseStep;
   monitoringStatus: "all_clear" | "incident" | "idle";
   monitoringMessage: string | null;
+  monitoringLastCheckedAt: string | null;
 };
 
-export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitoringMessage }: Props) {
+export function IncidentStatusPanel({
+  memory,
+  phase,
+  monitoringStatus,
+  monitoringMessage,
+  monitoringLastCheckedAt,
+}: Props) {
+  const incidentElapsed = useElapsed(memory?.createdAt ?? memory?.lastCycleAt);
+  const monitoringElapsed = useElapsed(monitoringLastCheckedAt ?? undefined);
+
   if (!memory) {
     if (monitoringStatus === "all_clear") {
       return (
-        <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-            <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-500" />
+        <div className="flex h-full flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-center shadow-sm">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl shadow-sm ring-1 ring-emerald-100">
+              😊
+            </div>
+            <div className="mb-3 flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              System OK
+            </div>
+            <p className="text-lg font-bold text-slate-800">No recovery in progress</p>
+            <p className="mt-2 max-w-[14rem] text-xs leading-relaxed text-slate-600">
+              {monitoringMessage ?? "Tensorlake monitoring reports no suspicious patterns."}
+            </p>
+            <p className="mt-4 text-[11px] font-medium text-emerald-700">
+              Last clean check {monitoringElapsed} ago
+            </p>
           </div>
-          <p className="text-sm font-semibold text-emerald-700">All Clear</p>
-          <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            {monitoringMessage ?? "No anomalies detected."}
-          </p>
+          <PlaceholderButtons tone="ok" />
         </div>
       );
     }
 
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center">
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-          <span className="text-xl">⏱</span>
+      <div className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white px-5 py-6 text-center shadow-sm">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 text-3xl ring-1 ring-sky-100">
+            🛡️
+          </div>
+          <div className="mb-3 flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+            <span className="h-2 w-2 rounded-full bg-slate-400" />
+            Standing by
+          </div>
+          <p className="text-lg font-bold text-slate-800">No active incident</p>
+          <p className="mt-2 max-w-[14rem] text-xs leading-relaxed text-slate-500">
+            SentinelOps is ready for the next Tensorlake monitoring cycle.
+          </p>
         </div>
-        <p className="text-sm font-medium text-slate-500">No active incident</p>
-        <p className="mt-1 text-xs text-slate-400">Press Start Monitoring</p>
+        <PlaceholderButtons tone="idle" />
       </div>
     );
   }
@@ -73,6 +105,29 @@ export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitorin
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto [scrollbar-width:none]">
+      <div className="relative overflow-hidden rounded-2xl border border-rose-200 bg-rose-50 px-5 py-5 shadow-sm ring-1 ring-rose-100">
+        <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-sm">
+          🚨
+        </div>
+        <div className="mb-4 flex items-center gap-2">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500" />
+          <span className="text-[11px] font-bold uppercase tracking-widest text-rose-700">
+            Incident recovery active
+          </span>
+        </div>
+        <p className="max-w-[12rem] text-lg font-black text-slate-900">
+          Suspicious patterns detected
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-slate-600">
+          Tensorlake started the response loop for {memory.alert?.affectedSystem ?? "affected host"}.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Metric label="Duration" value={incidentElapsed} />
+          <Metric label="Cycle" value={String(memory.cycleCount)} />
+        </div>
+        <PlaceholderButtons tone="incident" />
+      </div>
+
       {/* Severity badge */}
       <div className={`rounded-2xl border px-5 py-5 text-center ${sev.bg} ${sev.ring} ring-1 ring-inset`}>
         <p className={`text-4xl font-black uppercase tracking-widest ${sev.text}`}>
@@ -141,6 +196,41 @@ export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitorin
           </span>
         </p>
       </div>
+    </div>
+  );
+}
+
+function PlaceholderButtons({ tone }: { tone: "ok" | "idle" | "incident" }) {
+  const styles =
+    tone === "incident"
+      ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
+      : tone === "ok"
+      ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+      : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-white";
+
+  return (
+    <div className="mt-5 grid grid-cols-2 gap-2">
+      {["Acknowledge", "Assign", "Escalate", "Notes"].map((label) => (
+        <button
+          key={label}
+          type="button"
+          className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${styles}`}
+          title={`${label} action placeholder`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-rose-100 bg-white px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 font-mono text-sm font-bold text-slate-900">{value}</p>
     </div>
   );
 }

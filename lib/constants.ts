@@ -1,4 +1,4 @@
-import type { Severity, TaskStatus } from "./types";
+import type { ActionStatus, Severity, TaskStatus } from "./types";
 import type { ConsoleLog, IncidentDerivedStatus, LanayaUpdate } from "./incidentView";
 
 export const POLL_INTERVAL_MS = 5000;
@@ -80,6 +80,18 @@ export const TASK_LABEL: Record<TaskStatus, string> = {
   done: "Done",
   in_progress: "In flight",
   pending: "Queued",
+};
+
+export const ACTION_PILL: Record<ActionStatus, string> = {
+  completed: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  executing: "bg-sky-100 text-sky-700 ring-sky-200",
+  proposed: "bg-slate-100 text-slate-600 ring-slate-200",
+};
+
+export const ACTION_LABEL: Record<ActionStatus, string> = {
+  completed: "Done",
+  executing: "Executing",
+  proposed: "Proposed",
 };
 
 export const CONSOLE_LEVEL_TONE: Record<ConsoleLog["level"], string> = {
