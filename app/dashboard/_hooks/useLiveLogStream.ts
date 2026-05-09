@@ -62,16 +62,18 @@ function makeLog(tpl: Tpl): LiveLog {
   };
 }
 
-export function useLiveLogStream(active: boolean) {
+export type StreamPhase = "idle" | "monitoring" | "incident";
+
+export function useLiveLogStream(streamPhase: StreamPhase) {
   const [logs, setLogs] = useState<LiveLog[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const elapsed = useRef(0);
   const normalIdx = useRef(0);
   const suspIdx = useRef(0);
   const critIdx = useRef(0);
+  const elapsed = useRef(0);
 
   useEffect(() => {
-    if (!active) return;
+    if (streamPhase === "idle") return;
 
     elapsed.current = 0;
     normalIdx.current = 0;
@@ -79,23 +81,25 @@ export function useLiveLogStream(active: boolean) {
     critIdx.current = 0;
 
     function emit() {
-      const t = elapsed.current;
       let tpl: Tpl;
       let delay: number;
 
-      if (t < 8000) {
+      if (streamPhase === "monitoring") {
         tpl = NORMAL[normalIdx.current++ % NORMAL.length];
-        delay = 250 + Math.random() * 350;
-      } else if (t < 20000) {
-        const pickSusp = Math.random() < 0.45 && suspIdx.current < SUSPICIOUS.length;
-        tpl = pickSusp ? SUSPICIOUS[suspIdx.current++] : NORMAL[normalIdx.current++ % NORMAL.length];
-        delay = 500 + Math.random() * 700;
-      } else if (critIdx.current < CRITICAL.length) {
-        tpl = CRITICAL[critIdx.current++];
-        delay = 700 + Math.random() * 500;
+        delay = 600 + Math.random() * 600;
       } else {
-        tpl = NORMAL[normalIdx.current++ % NORMAL.length];
-        delay = 700 + Math.random() * 900;
+        const t = elapsed.current;
+        if (t < 6000) {
+          const pickSusp = Math.random() < 0.6 && suspIdx.current < SUSPICIOUS.length;
+          tpl = pickSusp ? SUSPICIOUS[suspIdx.current++] : NORMAL[normalIdx.current++ % NORMAL.length];
+          delay = 400 + Math.random() * 500;
+        } else if (critIdx.current < CRITICAL.length) {
+          tpl = CRITICAL[critIdx.current++];
+          delay = 600 + Math.random() * 500;
+        } else {
+          tpl = NORMAL[normalIdx.current++ % NORMAL.length];
+          delay = 800 + Math.random() * 800;
+        }
       }
 
       setLogs((prev) => [...prev, makeLog(tpl)]);
@@ -104,8 +108,10 @@ export function useLiveLogStream(active: boolean) {
     }
 
     emit();
-    return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [active]);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, [streamPhase]);
 
   const clear = () => setLogs([]);
   return { logs, clear };

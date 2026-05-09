@@ -41,10 +41,29 @@ function formatTime(iso: string) {
 type Props = {
   memory: AgentMemory | null;
   phase: IncidentPhaseStep;
+  monitoringStatus: "all_clear" | "incident" | "idle";
+  monitoringMessage: string | null;
 };
 
-export function IncidentStatusPanel({ memory, phase }: Props) {
+export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitoringMessage }: Props) {
   if (!memory) {
+    if (monitoringStatus === "all_clear") {
+      return (
+        <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-950/10 px-6 py-12 text-center">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-900/40">
+            <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+          </div>
+          <p className="text-sm font-semibold text-emerald-300">All Clear</p>
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            {monitoringMessage ?? "No anomalies detected. Agent monitoring."}
+          </p>
+          <p className="mt-3 text-[10px] text-slate-700 uppercase tracking-widest">
+            Sentinel monitoring active
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] px-6 py-12 text-center">
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-800">
@@ -52,7 +71,7 @@ export function IncidentStatusPanel({ memory, phase }: Props) {
         </div>
         <p className="text-sm font-medium text-slate-300">Agent on watch</p>
         <p className="mt-1 text-xs text-slate-600">
-          No active incident — press Start Demo Stream
+          No active incident — press Start Monitoring
         </p>
       </div>
     );

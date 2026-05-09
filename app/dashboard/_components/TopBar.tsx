@@ -10,9 +10,10 @@ type Props = {
   lastPoll: Date | null;
   agentStatus: "active" | "sleeping";
   nextCycleInSeconds: number;
+  monitoringStatus: "all_clear" | "incident" | "idle";
 };
 
-export function TopBar({ memory, lastPoll, agentStatus, nextCycleInSeconds }: Props) {
+export function TopBar({ memory, lastPoll, agentStatus, nextCycleInSeconds, monitoringStatus }: Props) {
   const [countdown, setCountdown] = useState(nextCycleInSeconds);
 
   useEffect(() => { setCountdown(nextCycleInSeconds); }, [nextCycleInSeconds]);
@@ -37,6 +38,14 @@ export function TopBar({ memory, lastPoll, agentStatus, nextCycleInSeconds }: Pr
         <span className="font-semibold tracking-tight text-slate-100">{BRAND.NAME}</span>
         <span className="hidden text-xs text-slate-600 sm:inline">{BRAND.TAGLINE}</span>
       </div>
+
+      {/* Monitoring status pill */}
+      {!memory && monitoringStatus === "all_clear" && (
+        <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 ring-1 ring-inset ring-emerald-500/20">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          <span className="text-xs text-emerald-300">Monitoring · All Clear</span>
+        </div>
+      )}
 
       {/* Incident ID + type */}
       {memory && (

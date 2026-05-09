@@ -32,6 +32,9 @@ interface AgentStatus {
   agentStatus: "active" | "sleeping";
   nextCycleInSeconds: number;
   phase: IncidentPhaseStep;
+  monitoringStatus: "all_clear" | "incident" | "idle";
+  monitoringMessage: string | null;
+  monitoringLastCheckedAt: string | null;
   loading: boolean;
   lastPoll: Date | null;
   refresh: () => Promise<void>;
@@ -45,6 +48,9 @@ export function useAgentStatus(): AgentStatus {
   const [agentStatus, setAgentStatus] = useState<"active" | "sleeping">("sleeping");
   const [nextCycleInSeconds, setNextCycleInSeconds] = useState(0);
   const [phase, setPhase] = useState<IncidentPhaseStep>("detected");
+  const [monitoringStatus, setMonitoringStatus] = useState<"all_clear" | "incident" | "idle">("idle");
+  const [monitoringMessage, setMonitoringMessage] = useState<string | null>(null);
+  const [monitoringLastCheckedAt, setMonitoringLastCheckedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
 
@@ -59,6 +65,9 @@ export function useAgentStatus(): AgentStatus {
       setAgentStatus(data.agentStatus ?? "sleeping");
       setNextCycleInSeconds(data.nextCycleInSeconds ?? 0);
       setPhase(data.phase ?? "detected");
+      setMonitoringStatus(data.monitoringStatus ?? "idle");
+      setMonitoringMessage(data.monitoringMessage ?? null);
+      setMonitoringLastCheckedAt(data.monitoringLastCheckedAt ?? null);
       setLastPoll(new Date());
     } catch {
       // keep prior state
@@ -88,6 +97,9 @@ export function useAgentStatus(): AgentStatus {
     agentStatus,
     nextCycleInSeconds,
     phase,
+    monitoringStatus,
+    monitoringMessage,
+    monitoringLastCheckedAt,
     loading,
     lastPoll,
     refresh,
