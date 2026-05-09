@@ -17,6 +17,7 @@ export async function POST(_req: NextRequest) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: "null",
     }
