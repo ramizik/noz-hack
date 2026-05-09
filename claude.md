@@ -44,6 +44,7 @@ The assistant is a collaborator and technical guide, not an autopilot that produ
 - Every feature must directly improve the live demo.
 - When unsure, reduce scope.
 - Avoid gold-plating.
+- Always target the deployed production version. Never introduce mock paths, dev-only branches, or environment flags that split production behavior. All features must work in the live Vercel deployment.
 
 ## Collaboration Rule (Proactive Coaching)
 

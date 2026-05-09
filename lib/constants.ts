@@ -50,17 +50,17 @@ export const INJECT_ALERT_ENDPOINT = "/api/inject-alert";
 export const LANAYA_ENDPOINT = "/api/lanaya";
 
 export const SEVERITY_PILL: Record<Severity, string> = {
-  critical: "bg-red-500/15 text-red-400 ring-red-500/30",
-  high: "bg-orange-500/15 text-orange-300 ring-orange-500/30",
-  medium: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
-  low: "bg-sky-500/15 text-sky-300 ring-sky-500/30",
+  critical: "bg-red-100 text-red-700 ring-red-200",
+  high: "bg-orange-100 text-orange-700 ring-orange-200",
+  medium: "bg-amber-100 text-amber-700 ring-amber-200",
+  low: "bg-sky-100 text-sky-700 ring-sky-200",
 };
 
 export const STATUS_PILL: Record<IncidentDerivedStatus, string> = {
-  open: "bg-red-500/15 text-red-300 ring-red-500/30",
-  in_progress: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
-  escalated: "bg-rose-500/15 text-rose-300 ring-rose-500/30",
-  resolved: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30",
+  open: "bg-red-100 text-red-700 ring-red-200",
+  in_progress: "bg-amber-100 text-amber-700 ring-amber-200",
+  escalated: "bg-rose-100 text-rose-700 ring-rose-200",
+  resolved: "bg-emerald-100 text-emerald-700 ring-emerald-200",
 };
 
 export const STATUS_LABEL: Record<IncidentDerivedStatus, string> = {
@@ -71,9 +71,9 @@ export const STATUS_LABEL: Record<IncidentDerivedStatus, string> = {
 };
 
 export const TASK_PILL: Record<TaskStatus, string> = {
-  done: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30",
-  in_progress: "bg-sky-500/15 text-sky-300 ring-sky-500/30",
-  pending: "bg-slate-500/15 text-slate-300 ring-slate-500/30",
+  done: "bg-emerald-100 text-emerald-700 ring-emerald-200",
+  in_progress: "bg-sky-100 text-sky-700 ring-sky-200",
+  pending: "bg-slate-100 text-slate-600 ring-slate-200",
 };
 
 export const TASK_LABEL: Record<TaskStatus, string> = {

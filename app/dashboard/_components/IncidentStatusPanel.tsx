@@ -1,30 +1,26 @@
 import type { AgentMemory, IncidentPhaseStep } from "@/lib/types";
 import { PhaseTracker } from "./PhaseTracker";
 
-const SEV_STYLES: Record<string, { bg: string; text: string; ring: string; glow: string }> = {
+const SEV_STYLES: Record<string, { bg: string; text: string; ring: string }> = {
   critical: {
-    bg: "bg-red-500/10",
-    text: "text-red-400",
-    ring: "ring-red-500/30",
-    glow: "shadow-[0_0_40px_rgba(239,68,68,0.2)]",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    ring: "ring-red-200",
   },
   high: {
-    bg: "bg-orange-500/10",
-    text: "text-orange-400",
-    ring: "ring-orange-500/30",
-    glow: "shadow-[0_0_40px_rgba(249,115,22,0.15)]",
+    bg: "bg-orange-50",
+    text: "text-orange-700",
+    ring: "ring-orange-200",
   },
   medium: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
-    ring: "ring-amber-500/30",
-    glow: "",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    ring: "ring-amber-200",
   },
   low: {
-    bg: "bg-slate-700/30",
-    text: "text-slate-400",
-    ring: "ring-slate-600/30",
-    glow: "",
+    bg: "bg-slate-100",
+    text: "text-slate-600",
+    ring: "ring-slate-200",
   },
 };
 
@@ -49,30 +45,25 @@ export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitorin
   if (!memory) {
     if (monitoringStatus === "all_clear") {
       return (
-        <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-950/10 px-6 py-12 text-center">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-900/40">
-            <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+        <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+            <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-500" />
           </div>
-          <p className="text-sm font-semibold text-emerald-300">All Clear</p>
+          <p className="text-sm font-semibold text-emerald-700">All Clear</p>
           <p className="mt-2 text-xs leading-relaxed text-slate-500">
-            {monitoringMessage ?? "No anomalies detected. Agent monitoring."}
-          </p>
-          <p className="mt-3 text-[10px] text-slate-700 uppercase tracking-widest">
-            Sentinel monitoring active
+            {monitoringMessage ?? "No anomalies detected."}
           </p>
         </div>
       );
     }
 
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] px-6 py-12 text-center">
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-800">
+      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
           <span className="text-xl">⏱</span>
         </div>
-        <p className="text-sm font-medium text-slate-300">Agent on watch</p>
-        <p className="mt-1 text-xs text-slate-600">
-          No active incident — press Start Monitoring
-        </p>
+        <p className="text-sm font-medium text-slate-500">No active incident</p>
+        <p className="mt-1 text-xs text-slate-400">Press Start Monitoring</p>
       </div>
     );
   }
@@ -82,77 +73,72 @@ export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitorin
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto [scrollbar-width:none]">
-      {/* Large severity badge */}
-      <div
-        className={`rounded-2xl border px-5 py-5 text-center ${sev.bg} ${sev.ring} ring-1 ring-inset ${sev.glow}`}
-      >
+      {/* Severity badge */}
+      <div className={`rounded-2xl border px-5 py-5 text-center ${sev.bg} ${sev.ring} ring-1 ring-inset`}>
         <p className={`text-4xl font-black uppercase tracking-widest ${sev.text}`}>
           {memory.severity}
         </p>
         {wasEscalated && (
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-orange-400/70">
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-orange-500">
             ↑ escalated from HIGH
           </p>
         )}
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-slate-500">
           {memory.classification.replace(/_/g, " ")}
         </p>
       </div>
 
       {/* Incident metadata */}
-      <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-4 space-y-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 space-y-3 shadow-sm">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
           Incident Details
         </p>
 
         <Row label="ID">
-          <span className="font-mono text-xs text-slate-300">{memory.incidentId}</span>
+          <span className="font-mono text-xs text-slate-700">{memory.incidentId}</span>
         </Row>
 
         {memory.alert?.affectedSystem && (
           <Row label="Affected">
-            <span className="text-xs text-slate-300">{memory.alert.affectedSystem}</span>
+            <span className="text-xs text-slate-700">{memory.alert.affectedSystem}</span>
           </Row>
         )}
 
         <Row label="First detected">
-          <span className="font-mono text-xs text-slate-400">
+          <span className="font-mono text-xs text-slate-500">
             {formatTime(memory.createdAt ?? memory.lastCycleAt)}
           </span>
         </Row>
 
-        <Row label="Cycles completed">
-          <span className="text-xs font-bold text-slate-200">{memory.cycleCount}</span>
+        <Row label="Cycles">
+          <span className="text-xs font-bold text-slate-800">{memory.cycleCount}</span>
         </Row>
 
-        <Row label="Classification">
-          <span className="text-xs text-slate-300">
+        <Row label="Type">
+          <span className="text-xs text-slate-600">
             {memory.classification.replace(/_/g, " ")}
           </span>
         </Row>
       </div>
 
       {/* Phase tracker */}
-      <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-4">
-        <p className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+        <p className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
           Response Phase
         </p>
         <PhaseTracker phase={phase} />
       </div>
 
-      {/* Memory indicator */}
-      <div className="rounded-xl border border-teal-500/10 bg-teal-950/10 px-4 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-teal-500">
-          Memory State
+      {/* Memory state */}
+      <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-teal-600">
+          Tensorlake Memory
         </p>
-        <p className="mt-1.5 text-xs text-slate-300">
-          Cycle {memory.cycleCount} — last updated{" "}
-          <span className="font-mono text-teal-400">
+        <p className="mt-1.5 text-xs text-slate-700">
+          Cycle {memory.cycleCount} · last write{" "}
+          <span className="font-mono text-teal-700">
             {new Date(memory.lastCycleAt).toLocaleTimeString()}
           </span>
-        </p>
-        <p className="mt-1 text-[10px] text-slate-600">
-          Tensorlake sandbox · persistent across restarts
         </p>
       </div>
     </div>
@@ -162,7 +148,7 @@ export function IncidentStatusPanel({ memory, phase, monitoringStatus, monitorin
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-widest text-slate-600">
+      <span className="shrink-0 text-[10px] font-medium uppercase tracking-widest text-slate-400">
         {label}
       </span>
       <div className="text-right">{children}</div>

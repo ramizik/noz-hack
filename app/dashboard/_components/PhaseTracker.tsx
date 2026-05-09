@@ -29,18 +29,18 @@ export function PhaseTracker({ phase }: Props) {
             <div className="flex flex-col items-center gap-1">
               <div
                 className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ring-1 ring-inset transition-colors
-                  ${done ? "bg-emerald-500/20 text-emerald-300 ring-emerald-500/40" : ""}
-                  ${active ? "bg-orange-500/20 text-orange-300 ring-orange-500/40" : ""}
-                  ${!done && !active ? "bg-slate-800 text-slate-600 ring-slate-700" : ""}
+                  ${done ? "bg-emerald-100 text-emerald-700 ring-emerald-200" : ""}
+                  ${active ? "bg-orange-100 text-orange-700 ring-orange-200" : ""}
+                  ${!done && !active ? "bg-slate-100 text-slate-400 ring-slate-200" : ""}
                 `}
               >
                 {done ? "✓" : i + 1}
               </div>
               <span
                 className={`text-[9px] font-semibold uppercase tracking-widest
-                  ${done ? "text-emerald-400" : ""}
-                  ${active ? "text-orange-300" : ""}
-                  ${!done && !active ? "text-slate-600" : ""}
+                  ${done ? "text-emerald-600" : ""}
+                  ${active ? "text-orange-600" : ""}
+                  ${!done && !active ? "text-slate-400" : ""}
                 `}
               >
                 {step.label}
@@ -48,7 +48,7 @@ export function PhaseTracker({ phase }: Props) {
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className={`mx-1 mb-4 h-px flex-1 transition-colors ${done ? "bg-emerald-500/40" : "bg-slate-800"}`}
+                className={`mx-1 mb-4 h-px flex-1 transition-colors ${done ? "bg-emerald-300" : "bg-slate-200"}`}
               />
             )}
           </div>

@@ -32,16 +32,16 @@ export function CenterPanel({ timeline, tasks }: Props) {
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden">
-      {/* Timeline — top half */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#04060a]">
-        <div className="flex shrink-0 items-center justify-between border-b border-white/5 bg-black/40 px-4 py-3">
-          <span className="text-xs font-semibold text-slate-300">Timeline</span>
-          <span className="text-[10px] tabular-nums text-slate-600">{timeline.length} events</span>
+      {/* Timeline */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <span className="text-xs font-semibold text-slate-700">Timeline</span>
+          <span className="text-[10px] tabular-nums text-slate-400">{timeline.length} events</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.15)_transparent]">
+        <div className="flex-1 overflow-y-auto px-4 py-3 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent]">
           {reversed.length === 0 ? (
-            <p className="py-6 text-center text-xs text-slate-600">
+            <p className="py-6 text-center text-xs text-slate-400">
               Timeline populates after first agent cycle
             </p>
           ) : (
@@ -53,21 +53,21 @@ export function CenterPanel({ timeline, tasks }: Props) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] tabular-nums text-slate-600">
+                      <span className="font-mono text-[10px] tabular-nums text-slate-400">
                         {formatTime(ev.timestamp)}
                       </span>
                       {ev.cycle === 2 && (
-                        <span className="rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-violet-400 ring-1 ring-inset ring-violet-500/20">
+                        <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-violet-600 ring-1 ring-inset ring-violet-200">
                           cycle 2
                         </span>
                       )}
                       {ev.niaInvolved && (
-                        <span className="rounded-full bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-cyan-400 ring-1 ring-inset ring-cyan-500/20">
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-teal-600 ring-1 ring-inset ring-teal-200">
                           via Nia
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-700">
                       {ev.summary}
                     </p>
                   </div>
@@ -78,27 +78,27 @@ export function CenterPanel({ timeline, tasks }: Props) {
         </div>
       </div>
 
-      {/* Tasks — bottom */}
-      <div className="shrink-0 rounded-2xl border border-white/5 bg-white/[0.02]">
-        <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
-          <span className="text-xs font-semibold text-slate-300">Tasks</span>
+      {/* Tasks */}
+      <div className="shrink-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <span className="text-xs font-semibold text-slate-700">Tasks</span>
           {tasks.length > 0 && (
-            <span className="text-[10px] tabular-nums text-slate-600">{tasks.length}</span>
+            <span className="text-[10px] tabular-nums text-slate-400">{tasks.length}</span>
           )}
         </div>
         <div className="px-4 py-3">
           {tasks.length === 0 ? (
-            <p className="py-3 text-center text-xs text-slate-600">No tasks yet</p>
+            <p className="py-3 text-center text-xs text-slate-400">No tasks yet</p>
           ) : (
             <ul className="space-y-2">
               {tasks.map((task) => (
                 <li
                   key={task.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5"
+                  className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs leading-snug text-slate-200">{task.description}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-600">
+                    <p className="text-xs leading-snug text-slate-700">{task.description}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
                       {task.assignedTo} · {task.type}
                     </p>
                   </div>
