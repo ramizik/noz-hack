@@ -50,9 +50,10 @@ def main() -> None:
         else:
             print(f"  ⚠ {key} not set in .env — skipping")
 
-    # 3. Deploy the application
+    # 3. Deploy the application (use tensorlake-deploy directly — tl deploy can't find it on Windows PATH)
     print("\n--- Deploying application ---")
-    run([_tl, "deploy", str(AGENT_FILE)])
+    _deploy_script = _user_scripts / "tensorlake-deploy"
+    run(["python", str(_deploy_script), str(AGENT_FILE)])
 
     # 4. Register cron
     print("\n--- Registering cron schedule ---")
