@@ -68,6 +68,16 @@ export function buildConsoleLogs(memory: AgentMemory | null): ConsoleLog[] {
     });
   }
 
+  for (const log of memory.criticalLogs ?? []) {
+    logs.push({
+      id: log.id,
+      ts: log.timestamp,
+      level: log.severity === "critical" ? "CRITICAL" : log.severity === "warning" ? "WARN" : "INFO",
+      source: log.source,
+      message: log.message,
+    });
+  }
+
   return logs.sort(
     (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
   );
@@ -93,6 +103,15 @@ export function buildLanayaUpdates(memory: AgentMemory | null): LanayaUpdate[] {
       ts: ev.timestamp,
       level: ev.niaSourceRef ? "INFO" : baseLevel,
       body: `[${ev.source}] ${ev.content}`,
+    });
+  }
+
+  for (const log of memory.criticalLogs ?? []) {
+    updates.push({
+      id: `lanaya-${log.id}`,
+      ts: log.timestamp,
+      level: log.severity === "critical" ? "CRITICAL" : log.severity === "warning" ? "WARN" : "INFO",
+      body: `[${log.source}] ${log.message}`,
     });
   }
 

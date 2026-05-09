@@ -1,6 +1,7 @@
-import type { AgentAction, DerivedTimelineEvent, Task } from "@/lib/types";
+import type { AgentAction, DerivedTimelineEvent, SlackNotification, Task } from "@/lib/types";
 import { ACTION_LABEL, ACTION_PILL, TASK_LABEL, TASK_PILL } from "@/lib/constants";
 import { Pill } from "./Pill";
+import { SlackCommunications } from "./SlackCommunications";
 
 const EVENT_ICON: Record<DerivedTimelineEvent["eventType"], string> = {
   agent_wake: "⚡",
@@ -38,9 +39,10 @@ type Props = {
   timeline: DerivedTimelineEvent[];
   tasks: Task[];
   actions: AgentAction[];
+  notifications: SlackNotification[];
 };
 
-export function CenterPanel({ timeline, tasks, actions }: Props) {
+export function CenterPanel({ timeline, tasks, actions, notifications }: Props) {
   const reversed = [...timeline].reverse();
 
   return (
@@ -137,6 +139,8 @@ export function CenterPanel({ timeline, tasks, actions }: Props) {
           )}
         </div>
       </div>
+
+      <SlackCommunications notifications={notifications} />
 
       {/* Tasks */}
       <div className="shrink-0 rounded-2xl border border-slate-200 bg-white shadow-sm">

@@ -1,6 +1,6 @@
 # SentinelOps Roadmap
 
-Last updated: 2026-05-09 4:45pm PT
+Last updated: 2026-05-09 5:15pm PT
 Deadline: 2026-05-09 6:00pm PT
 
 ## North Star
@@ -29,7 +29,7 @@ The demo must prove:
 - [x] Application entry point is `sentinel_agent_cycle`.
 - [x] Agent runs as a Tensorlake `@application()` / `@function()`.
 - [x] Agent image installs `httpx`, `openai`, and `tensorlake`.
-- [x] Tensorlake secrets are declared for `NIA_API_KEY`, `OPENAI_API_KEY`, `TENSORLAKE_API_KEY`, and `TENSORLAKE_MEMORY_SANDBOX_ID`.
+- [x] Tensorlake secrets are declared for `NIA_API_KEY`, `OPENAI_API_KEY`, `TENSORLAKE_API_KEY`, `TENSORLAKE_MEMORY_SANDBOX_ID`, `SLACK_BOT_TOKEN`, and `SLACK_CHANNEL_ID`.
 - [x] Named memory sandbox pattern exists.
 - [x] Next.js reads memory from Tensorlake via `lib/tensorlake.ts`.
 - [x] Memory paths are established:
@@ -58,6 +58,9 @@ The demo must prove:
 - [x] Agent creates response tasks.
 - [x] Agent creates evidence records with Nia source references.
 - [x] Agent persists safe autonomous action records into Tensorlake incident memory.
+- [x] Agent persists Slack communication intents and delivery receipts into Tensorlake incident memory.
+- [x] Agent sends Slack updates for triage, autonomous action summaries, progress notes, and cycle-2 handoff/escalation.
+- [x] Agent identifies suspected mailbox-to-workstation-to-database lateral movement and records identity/endpoint containment actions.
 - [x] Agent writes updated incident memory back to Tensorlake.
 - [x] Agent generates handoff summary on cycle 2+.
 
@@ -95,8 +98,11 @@ The demo must prove:
 - [x] Alert injection route writes to Tensorlake and fires the agent.
 - [x] Dashboard can display monitoring, incident, timeline, task, evidence, Nia, and handoff surfaces.
 - [x] Dashboard shows an Autonomous Actions ledger grounded in Nia sources.
+- [x] Dashboard shows latest Slack communications from Tensorlake memory, including sent/failed status and permalinks.
 - [x] Dashboard has a Reset Demo control for clean rehearsals.
 - [x] Left status panel shows friendly all-clear/standby visuals and switches to active recovery with Tensorlake-backed incident duration.
+- [x] Dashboard can open a Tensorlake Console drawer backed by the real Tensorlake application logs API.
+- [x] Live demo logs include identity, mailbox, endpoint, phishing attachment, and continuing post-containment suspicious activity.
 
 ## Known Gaps and Risks
 
@@ -107,12 +113,15 @@ The demo must prove:
   - `TENSORLAKE_MEMORY_SANDBOX_ID`
   - `NIA_API_KEY`
   - `OPENAI_API_KEY`
+  - `SLACK_BOT_TOKEN`
+  - `SLACK_CHANNEL_ID`
 - [x] Verify Nia runbooks are indexed in the account used by production.
 - [ ] Verify Nia search endpoint shape. Code currently uses `/contexts/semantic-search`; `CLAUDE.md` mentions `/contexts/search`. Pick the working endpoint and standardize both code and docs.
 - [x] Verify Tensorlake cron registration endpoint. Duplicate schedules were pruned to one active `*/2 * * * *` schedule.
 - [x] Verify deployed Tensorlake app can read/write the named memory sandbox.
 - [ ] Verify `POST /api/trigger` works on the deployed Vercel URL.
 - [ ] Verify `POST /api/inject-alert` writes the flag and triggers incident mode on deployed Vercel.
+- [ ] Verify Tensorlake app can post to Slack with the configured bot token and channel.
 - [ ] Verify cycle 2 visibly reads prior memory and generates handoff.
 - [x] Add or document a reliable demo reset path before judging.
 
@@ -269,6 +278,9 @@ These are ready to implement when asked, in priority order.
 - [ ] Dashboard copy tightening.
 - [ ] More realistic log stream.
 - [ ] Task status progression over cycles.
+- [x] Shift handoff context:
+  - Dashboard can switch between live and prerecorded incidents.
+  - Tensorlake memory now carries progress history, critical logs, and structured handoff context for future chat-agent grounding.
 - [ ] Stakeholder update card.
 - [ ] Downloadable shift handoff.
 

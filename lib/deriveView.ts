@@ -18,6 +18,13 @@ const NIA_META: Record<
     excerpt:
       "If anomalous egress volume is detected from a database host, block outbound traffic on all non-whitelisted IPs immediately. Preserve pcap and connection logs before isolation. Do not restart the DB service — this may destroy in-memory evidence.",
   },
+  "db_exfiltration": {
+    title: "DB Exfiltration Runbook",
+    section: "Immediate Containment Steps",
+    query: "unusual outbound traffic database prod",
+    excerpt:
+      "If anomalous egress volume is detected from a database host, block outbound traffic on all non-whitelisted IPs immediately. Preserve pcap and connection logs before isolation.",
+  },
   "ransomware-containment": {
     title: "Ransomware Containment Playbook",
     section: "Finance Segment Isolation",
@@ -38,6 +45,13 @@ const NIA_META: Record<
     query: "prod-db-01 prior incident postmortem history",
     excerpt:
       "Root cause: compromised service account svc-dbbackup used to stage data with pg_dump before exfiltration over HTTPS. Remediation: rotate all service account credentials, enforce network segmentation on DB subnet, alert on pg_dump outside scheduled windows.",
+  },
+  "prior_postmortem": {
+    title: "2026-03-14 Atlas Subnet Exfil Attempt",
+    section: "Lessons Learned",
+    query: "prior database exfiltration postmortem service account staging",
+    excerpt:
+      "A compromised service account was used to stage data before outbound transfer. Rotation, subnet egress review, and monitoring for archive tools were required follow-up actions.",
   },
 };
 
@@ -140,6 +154,30 @@ export function deriveTimeline(memory: AgentMemory): DerivedTimelineEvent[] {
       systems: ["nia", "agent"],
       timestamp: ev.timestamp,
       cycle: memory.cycleCount >= 2 && memory.evidence.indexOf(ev) >= Math.floor(memory.evidence.length / 2) ? 2 : 1,
+    });
+  }
+
+  for (const log of memory.criticalLogs ?? []) {
+    events.push({
+      id: `${memory.incidentId}-critical-log-${log.id}`,
+      eventType: "new_evidence",
+      summary: `Critical log added — [${log.source}] ${log.message}`,
+      niaInvolved: false,
+      systems: ["agent", "tensorlake"],
+      timestamp: log.timestamp,
+      cycle: memory.cycleCount >= 2 ? 2 : 1,
+    });
+  }
+
+  for (const progress of memory.progressHistory ?? []) {
+    events.push({
+      id: `${memory.incidentId}-progress-${progress.id}`,
+      eventType: progress.status === "handoff" ? "handoff" : "memory_write",
+      summary: `Progress history stored — ${progress.actor}: ${progress.summary}`,
+      niaInvolved: false,
+      systems: ["agent", "tensorlake"],
+      timestamp: progress.timestamp,
+      cycle: progress.cycle,
     });
   }
 

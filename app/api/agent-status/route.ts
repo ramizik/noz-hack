@@ -22,10 +22,13 @@ export async function GET(_req: NextRequest) {
   const latest = incidents.sort(
     (a, b) => new Date(b.lastCycleAt).getTime() - new Date(a.lastCycleAt).getTime()
   )[0] ?? null;
+  const activeLiveIncident = incidents.find(
+    (incident) => incident.sourceKind !== "prerecorded" && !incident.handoffSummary
+  );
 
   const { agentStatus, nextCycleInSeconds } = deriveAgentStatus(latest);
 
-  const monitoringStatus = latest
+  const monitoringStatus = activeLiveIncident
     ? "incident"
     : monitoring
     ? "all_clear"

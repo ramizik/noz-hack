@@ -1,19 +1,22 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAgentStatus } from "./_hooks/useAgentStatus";
+import { derivePhase, deriveTimeline } from "@/lib/deriveView";
 import { TopBar } from "./_components/TopBar";
 import { IncidentStatusPanel } from "./_components/IncidentStatusPanel";
 import { ActivityFeed } from "./_components/ActivityFeed";
 import { CenterPanel } from "./_components/CenterPanel";
 import { HandoffSummary } from "./_components/HandoffSummary";
+import { IncidentSwitcher } from "./_components/IncidentSwitcher";
+import { TensorlakeConsoleDrawer } from "./_components/TensorlakeConsoleDrawer";
 
 export function DashboardClient() {
   const {
+    incidents,
     latest,
     loading,
     lastPoll,
-    timeline,
     agentStatus,
     nextCycleInSeconds,
     phase,
@@ -28,6 +31,41 @@ export function DashboardClient() {
   const [resetSignal, setResetSignal] = useState(0);
   const [logsHidden, setLogsHidden] = useState(false);
   const [logsPaused, setLogsPaused] = useState(false);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+
+  const selectedIncident = useMemo(() => {
+    if (selectedIncidentId) {
+      const match = incidents.find((incident) => incident.incidentId === selectedIncidentId);
+      if (match) return match;
+    }
+    return latest ?? null;
+  }, [incidents, latest, selectedIncidentId]);
+
+  const selectedTimeline = useMemo(
+    () => (selectedIncident ? deriveTimeline(selectedIncident) : []),
+    [selectedIncident]
+  );
+
+  const selectedPhase = useMemo(
+    () => (selectedIncident ? derivePhase(selectedIncident) : phase),
+    [selectedIncident, phase]
+  );
+
+  useEffect(() => {
+    if (!selectedIncidentId && latest) {
+      setSelectedIncidentId(latest.incidentId);
+      return;
+    }
+
+    if (
+      selectedIncidentId &&
+      incidents.length > 0 &&
+      !incidents.some((incident) => incident.incidentId === selectedIncidentId)
+    ) {
+      setSelectedIncidentId(latest?.incidentId ?? incidents[0]?.incidentId ?? null);
+    }
+  }, [incidents, latest, selectedIncidentId]);
+  const [tensorlakeConsoleOpen, setTensorlakeConsoleOpen] = useState(false);
 
   const handleIncidentDetected = useCallback(() => {
     setShowIncidentToast(true);
@@ -73,6 +111,7 @@ export function DashboardClient() {
         nextCycleInSeconds={nextCycleInSeconds}
         monitoringStatus={monitoringStatus}
         onResetDemo={handleResetDemo}
+        onOpenTensorlakeConsole={() => setTensorlakeConsoleOpen(true)}
         resetPending={resetPending}
       />
 
@@ -81,9 +120,14 @@ export function DashboardClient() {
           {loading && (
             <p className="animate-pulse text-center text-xs text-slate-400 py-4">Connecting…</p>
           )}
+          <IncidentSwitcher
+            incidents={incidents}
+            selectedIncidentId={selectedIncident?.incidentId ?? null}
+            onSelect={setSelectedIncidentId}
+          />
           <IncidentStatusPanel
-            memory={latest ?? null}
-            phase={phase}
+            memory={selectedIncident}
+            phase={selectedPhase}
             monitoringStatus={monitoringStatus}
             monitoringMessage={monitoringMessage}
             monitoringLastCheckedAt={monitoringLastCheckedAt}
@@ -106,22 +150,31 @@ export function DashboardClient() {
 
         <div className="flex min-h-0 w-[34%] flex-col p-4">
           <CenterPanel
-            timeline={timeline}
-            tasks={latest?.tasks ?? []}
-            actions={latest?.actions ?? []}
+            timeline={selectedTimeline}
+            tasks={selectedIncident?.tasks ?? []}
+            actions={selectedIncident?.actions ?? []}
+            notifications={selectedIncident?.notifications ?? []}
           />
         </div>
       </div>
 
-      {latest?.handoffSummary && (
+      {selectedIncident?.handoffSummary && (
         <div className="shrink-0 border-t border-amber-200 px-6 py-4 max-h-[35vh] overflow-y-auto [scrollbar-width:thin]">
           <HandoffSummary
-            summary={latest.handoffSummary}
-            cycleCount={latest.cycleCount}
-            lastCycleAt={latest.lastCycleAt}
+            summary={selectedIncident.handoffSummary}
+            cycleCount={selectedIncident.cycleCount}
+            lastCycleAt={selectedIncident.lastCycleAt}
+            handoff={selectedIncident.shiftHandoff}
+            criticalLogs={selectedIncident.criticalLogs ?? []}
+            progressHistory={selectedIncident.progressHistory ?? []}
           />
         </div>
       )}
+
+      <TensorlakeConsoleDrawer
+        open={tensorlakeConsoleOpen}
+        onClose={() => setTensorlakeConsoleOpen(false)}
+      />
     </div>
   );
 }

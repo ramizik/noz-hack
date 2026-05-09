@@ -12,6 +12,7 @@ type Props = {
   nextCycleInSeconds: number;
   monitoringStatus: "all_clear" | "incident" | "idle";
   onResetDemo: () => void;
+  onOpenTensorlakeConsole: () => void;
   resetPending: boolean;
 };
 
@@ -22,6 +23,7 @@ export function TopBar({
   nextCycleInSeconds,
   monitoringStatus,
   onResetDemo,
+  onOpenTensorlakeConsole,
   resetPending,
 }: Props) {
   const [countdown, setCountdown] = useState(nextCycleInSeconds);
@@ -71,6 +73,13 @@ export function TopBar({
 
       {/* Agent status */}
       <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={onOpenTensorlakeConsole}
+          className="rounded-md border border-teal-200 bg-teal-50 px-3 py-1.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-100"
+        >
+          Tensorlake Console
+        </button>
         <button
           type="button"
           onClick={onResetDemo}

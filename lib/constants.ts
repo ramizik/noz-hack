@@ -48,6 +48,7 @@ export const REPLAY_ENDPOINT = "/api/webhook";
 export const AGENT_STATUS_ENDPOINT = "/api/agent-status";
 export const INJECT_ALERT_ENDPOINT = "/api/inject-alert";
 export const LANAYA_ENDPOINT = "/api/lanaya";
+export const TENSORLAKE_LOGS_ENDPOINT = "/api/tensorlake-logs";
 
 export const SEVERITY_PILL: Record<Severity, string> = {
   critical: "bg-red-100 text-red-700 ring-red-200",

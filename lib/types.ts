@@ -10,6 +10,7 @@ export type IncidentStatus = "open" | "in_progress" | "escalated" | "resolved";
 export type TaskStatus = "pending" | "in_progress" | "done";
 export type TaskType = "investigate" | "contain" | "communicate" | "escalate";
 export type ActionStatus = "proposed" | "executing" | "completed";
+export type SlackNotificationStatus = "pending" | "sent" | "failed";
 
 export interface Incident {
   id: string;
@@ -44,7 +45,14 @@ export interface AgentAction {
   incidentId: string;
   cycle: number;
   proposedBy: string;
-  actionType: "isolate_host" | "block_destination" | "request_logs" | "notify_lead" | "escalate";
+  actionType:
+    | "isolate_host"
+    | "isolate_endpoint"
+    | "block_destination"
+    | "disable_account"
+    | "request_logs"
+    | "notify_lead"
+    | "escalate";
   status: ActionStatus;
   target: string;
   description: string;
@@ -69,6 +77,7 @@ export interface AgentMemory {
   actions?: AgentAction[];
   progressHistory?: IncidentProgressEntry[];
   criticalLogs?: CriticalIncidentLog[];
+  notifications?: SlackNotification[];
   cycleCount: number;
   lastCycleAt: string;
   createdAt?: string;
@@ -158,6 +167,20 @@ export interface ShiftHandoffContext {
   criticalLogIds: string[];
   niaSources: string[];
   memoryBasis: string;
+}
+
+export interface SlackNotification {
+  id: string;
+  incidentId: string;
+  dedupeKey: string;
+  channel?: string;
+  text: string;
+  status: SlackNotificationStatus;
+  createdAt: string;
+  sentAt?: string;
+  slackTs?: string;
+  permalink?: string;
+  error?: string | null;
 }
 
 export type IncidentPhaseStep = "detected" | "triaged" | "contained" | "resolved";
