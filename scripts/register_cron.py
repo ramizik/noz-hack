@@ -41,9 +41,9 @@ def main() -> None:
         timeout=15,
     )
     if r.is_success:
-        print(f"✓ Cron registered: {r.json()}")
+        print(f"OK Cron registered: {r.json()}")
     else:
-        print(f"✗ Cron registration failed: {r.status_code} {r.text}", file=__import__("sys").stderr)
+        print(f"FAIL Cron registration failed: {r.status_code} {r.text}", file=__import__("sys").stderr)
         raise SystemExit(1)
 
 

@@ -2,6 +2,8 @@
 """Deploy sentinel_agent_cycle to Tensorlake: set secrets, deploy, register cron."""
 
 import os
+import shutil
+import site
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +16,10 @@ except ImportError:
 
 AGENT_FILE = Path(__file__).parent.parent / "agents" / "python" / "sentinel_agent.py"
 
+# Locate tl CLI — may be in user Scripts dir, not on PATH
+_user_scripts = Path(site.getusersitepackages()).parent / "Scripts"
+_tl = shutil.which("tl") or str(_user_scripts / "tl.exe")
+
 SECRETS = [
     "NIA_API_KEY",
     "OPENAI_API_KEY",
@@ -23,9 +29,9 @@ SECRETS = [
 
 def run(cmd: list[str]) -> None:
     print(f"$ {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=True)
-    if result.returncode != 0:
-        raise SystemExit(result.returncode)
+    env = os.environ.copy()
+    env["PATH"] = str(_user_scripts) + os.pathsep + env.get("PATH", "")
+    subprocess.run(cmd, check=True, shell=(sys.platform == "win32"), env=env)
 
 
 def main() -> None:
@@ -40,13 +46,13 @@ def main() -> None:
     for key in SECRETS:
         val = os.environ.get(key, "")
         if val:
-            run(["tl", "secrets", "set", f"{key}={val}"])
+            run([_tl, "secrets", "set", f"{key}={val}"])
         else:
             print(f"  ⚠ {key} not set in .env — skipping")
 
     # 3. Deploy the application
     print("\n--- Deploying application ---")
-    run(["tl", "deploy", str(AGENT_FILE)])
+    run([_tl, "deploy", str(AGENT_FILE)])
 
     # 4. Register cron
     print("\n--- Registering cron schedule ---")
