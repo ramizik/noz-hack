@@ -39,7 +39,7 @@ The demo must prove:
   - `/memory/normal_logs.json`
 - [x] One-time memory sandbox setup script exists: `scripts/setup_memory_sandbox.py`.
 - [x] Deploy script exists: `scripts/deploy.py`.
-- [x] Cron registration script exists: `scripts/register_cron.py`.
+- [x] Cron registration script exists and skips duplicate schedules: `scripts/register_cron.py`.
 - [x] Manual trigger API exists: `POST /api/trigger`.
 - [x] Alert injection API exists: `POST /api/inject-alert`.
 - [x] Demo reset API exists: `POST /api/reset-demo`.
@@ -109,10 +109,10 @@ The demo must prove:
   - `OPENAI_API_KEY`
 - [x] Verify Nia runbooks are indexed in the account used by production.
 - [ ] Verify Nia search endpoint shape. Code currently uses `/contexts/semantic-search`; `CLAUDE.md` mentions `/contexts/search`. Pick the working endpoint and standardize both code and docs.
-- [ ] Verify Tensorlake cron registration endpoint. Manual trigger uses current quickstart-style application endpoint; cron script uses a versioned namespace endpoint and must be confirmed.
-- [ ] Verify deployed Tensorlake app can read/write the named memory sandbox.
+- [x] Verify Tensorlake cron registration endpoint. Duplicate schedules were pruned to one active `*/2 * * * *` schedule.
+- [x] Verify deployed Tensorlake app can read/write the named memory sandbox.
 - [ ] Verify `POST /api/trigger` works on the deployed Vercel URL.
-- [ ] Verify `POST /api/inject-alert` writes the flag and triggers incident mode.
+- [ ] Verify `POST /api/inject-alert` writes the flag and triggers incident mode on deployed Vercel.
 - [ ] Verify cycle 2 visibly reads prior memory and generates handoff.
 - [x] Add or document a reliable demo reset path before judging.
 
@@ -142,7 +142,7 @@ Outcome: We know whether the codebase is shippable before touching more features
 - [ ] Confirm `scripts/setup_memory_sandbox.py` works against the current env.
 - [ ] Confirm `scripts/deploy.py` deploys `sentinel_agent_cycle`.
 - [ ] Confirm manual trigger creates or updates `/memory/monitoring.json`.
-- [ ] Confirm alert injection creates `/memory/pending_alert.json`, fires the agent, and produces `/memory/INC-2026-001.json`.
+- [x] Confirm alert injection creates `/memory/pending_alert.json`, fires the agent, and produces `/memory/INC-2026-001.json`.
 - [ ] Confirm second trigger increments `cycleCount` and preserves previous tasks/evidence.
 - [x] Add a reset endpoint or reset script if stale state will hurt the live demo.
 

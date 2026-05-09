@@ -67,11 +67,15 @@ export interface AgentMemory {
   tasks: Task[];
   evidence: Evidence[];
   actions?: AgentAction[];
+  progressHistory?: IncidentProgressEntry[];
+  criticalLogs?: CriticalIncidentLog[];
   cycleCount: number;
   lastCycleAt: string;
   createdAt?: string;
   alert?: Alert;
   handoffSummary?: string;
+  shiftHandoff?: ShiftHandoffContext;
+  sourceKind?: "live" | "prerecorded";
 }
 
 export interface Alert {
@@ -127,6 +131,35 @@ export interface DerivedTimelineEvent {
   cycle: number;
 }
 
+export interface CriticalIncidentLog {
+  id: string;
+  incidentId: string;
+  source: string;
+  severity: "notice" | "warning" | "critical";
+  message: string;
+  timestamp: string;
+}
+
+export interface IncidentProgressEntry {
+  id: string;
+  incidentId: string;
+  cycle: number;
+  actor: string;
+  status: "observed" | "decided" | "executed" | "blocked" | "handoff";
+  summary: string;
+  timestamp: string;
+}
+
+export interface ShiftHandoffContext {
+  generatedAt: string;
+  incomingShiftFocus: string[];
+  actionsTaken: string[];
+  unresolvedRisks: string[];
+  criticalLogIds: string[];
+  niaSources: string[];
+  memoryBasis: string;
+}
+
 export type IncidentPhaseStep = "detected" | "triaged" | "contained" | "resolved";
 
 export interface MonitoringMemory {
@@ -147,4 +180,25 @@ export interface AgentStatusResponse {
   monitoringStatus: "all_clear" | "incident" | "idle";
   monitoringMessage: string | null;
   monitoringLastCheckedAt: string | null;
+}
+
+export interface TensorlakeLogEntry {
+  id: string;
+  timestamp: string;
+  level: "trace" | "debug" | "info" | "warning" | "error" | "unknown";
+  levelNumber: number | null;
+  body: string;
+  application: string | null;
+  namespace: string | null;
+  requestId: string | null;
+  functionName: string | null;
+  functionRunId: string | null;
+  attributes: Record<string, unknown> | null;
+}
+
+export interface TensorlakeLogsResponse {
+  logs: TensorlakeLogEntry[];
+  nextToken: string | null;
+  fetchedAt: string;
+  consoleUrl: string;
 }

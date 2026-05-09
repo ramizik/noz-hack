@@ -27,11 +27,21 @@ def main() -> None:
 
     # List existing schedules
     r = httpx.get(f"{base}/{APP_NAME}/cron-schedules", headers=headers, timeout=15)
+    schedules = []
     if r.is_success:
         existing = r.json()
+        schedules = existing.get("schedules", [])
         print(f"Existing schedules: {json.dumps(existing, indent=2)}")
     else:
         print(f"Could not list schedules: {r.status_code} {r.text}")
+
+    matching = [
+        s for s in schedules
+        if s.get("enabled", True) and s.get("cron_expression") == CRON_EXPRESSION
+    ]
+    if matching:
+        print(f"OK Cron already registered: {matching[0]['id']}")
+        return
 
     # Register new schedule
     r = httpx.post(
