@@ -65,6 +65,11 @@ demo/
 ### Styling
 - Tailwind utility classes only. No inline styles. No standalone CSS files except global resets.
 
+### Git Workflow
+- Always `git pull --rebase` before `git push`. Never push without rebasing first.
+- Use rebase, not merge, to keep history linear.
+- If conflicts: resolve, `git add`, `git rebase --continue`, then push.
+
 ### Memory vs Knowledge Separation
 - Operational state (incident IDs, severity, evidence, task status) → Tensorlake memory only.
 - Knowledge retrieval (runbooks, procedures, signatures) → Nia only.
