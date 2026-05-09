@@ -8,6 +8,7 @@ import { NetworkConsole } from "./_components/NetworkConsole";
 import { CenterPanel } from "./_components/CenterPanel";
 import { NiaNavigator } from "./_components/NiaNavigator";
 import { HandoffSummary } from "./_components/HandoffSummary";
+import { SlackCommunications } from "./_components/SlackCommunications";
 
 export default function DashboardPage() {
   const {
@@ -95,8 +96,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex min-h-0 w-[34%] flex-col p-4">
-          <NiaNavigator retrievals={niaRetrievals} />
+        {/* RIGHT — Nia Navigator + Slack Communications (34%) */}
+        <div className="flex min-h-0 w-[34%] flex-col gap-3 p-4">
+          <div className="min-h-0 flex-1">
+            <NiaNavigator retrievals={niaRetrievals} />
+          </div>
+          <div className="shrink-0">
+            <SlackCommunications notifications={latest?.notifications ?? []} />
+          </div>
         </div>
       </div>
 

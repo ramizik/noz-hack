@@ -46,12 +46,29 @@ export interface TimelineEvent {
   timestamp: string;
 }
 
+export type SlackNotificationStatus = "pending" | "sent" | "failed";
+
+export interface SlackNotification {
+  id: string;
+  incidentId: string;
+  dedupeKey: string;
+  channel?: string;
+  text: string;
+  status: SlackNotificationStatus;
+  createdAt: string;
+  sentAt?: string;
+  slackTs?: string;
+  permalink?: string;
+  error?: string;
+}
+
 export interface AgentMemory {
   incidentId: string;
   severity: Severity;
   classification: string;
   tasks: Task[];
   evidence: Evidence[];
+  notifications?: SlackNotification[];
   cycleCount: number;
   lastCycleAt: string;
   createdAt?: string;
