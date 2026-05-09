@@ -82,7 +82,11 @@ export function deriveNiaRetrievals(memory: AgentMemory): NiaRetrieval[] {
       id: `nia-${ev.id}`,
       cycle,
       timestamp: ev.timestamp,
-      ...parsed,
+      documentTitle: parsed.title,
+      section: parsed.section,
+      queryUsed: parsed.query,
+      excerpt: parsed.excerpt,
+      sourcePath: parsed.sourcePath,
     });
   }
 
