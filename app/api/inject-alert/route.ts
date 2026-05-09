@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { writeAlertFlag } from "@/lib/tensorlake";
 import { SEED_ALERTS } from "@/lib/seedAlerts";
 
@@ -6,7 +6,7 @@ const APP_NAME = "sentinel_agent_cycle";
 
 export const maxDuration = 30;
 
-export async function POST() {
+export async function POST(_req: NextRequest) {
   const apiKey = process.env.TENSORLAKE_API_KEY;
   const sandboxId = process.env.TENSORLAKE_MEMORY_SANDBOX_ID;
   if (!apiKey || !sandboxId) {

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const APP_NAME = "sentinel_agent_cycle";
 
-export async function POST() {
+export async function POST(_req: NextRequest) {
   const apiKey = process.env.TENSORLAKE_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "TENSORLAKE_API_KEY not set" }, { status: 500 });
