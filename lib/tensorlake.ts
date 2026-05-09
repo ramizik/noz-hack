@@ -89,6 +89,8 @@ export async function runPythonIncidentCycle(
       INCIDENT_ID: incidentId,
       MEMORY_DIR,
       PYTHON_AGENT_PATH,
+      NIA_API_KEY: process.env.NIA_API_KEY ?? "",
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
     },
     timeout: 300,
   });
@@ -129,6 +131,10 @@ async function installPythonAgent(sb: Awaited<ReturnType<typeof memorySandbox>>)
     path.join(process.cwd(), "agents", "python", "incident_agent.py")
   );
   await sb.writeFile(PYTHON_AGENT_PATH, source);
+  await sb.run("/bin/bash", {
+    args: ["-lc", "pip install --quiet --disable-pip-version-check httpx openai"],
+    timeout: 120,
+  });
 }
 
 async function prepareSandboxFs(

@@ -1,16 +1,31 @@
 #!/usr/bin/env python3
-"""Deterministic Python incident cycle for Tensorlake background execution."""
+"""SentinelOps incident cycle: Nia knowledge retrieval + OpenAI classification."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
-from typing import Any
+
+import httpx
+from openai import OpenAI
+
+NIA_BASE = "https://apigcp.trynia.ai/v2"
+_openai: OpenAI | None = None
+
+
+def oai() -> OpenAI:
+    """Return cached OpenAI client."""
+    global _openai
+    if _openai is None:
+        _openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    return _openai
 
 
 def main() -> None:
+    """Entry point: load alert + prior memory, run cycle, write memory, print JSON."""
     args = parse_args()
     memory_dir = Path(args.memory_dir)
     memory_dir.mkdir(parents=True, exist_ok=True)
@@ -18,133 +33,161 @@ def main() -> None:
     alert = json.loads(Path(args.event).read_text(encoding="utf-8"))
     memory_path = memory_dir / f"{args.incident_id}.json"
     prior = json.loads(memory_path.read_text(encoding="utf-8")) if memory_path.exists() else None
-    state = build_memory(args.incident_id, alert, prior)
 
+    state = run_cycle(args.incident_id, alert, prior)
     memory_path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(state, sort_keys=True))
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run one SentinelOps incident cycle")
-    parser.add_argument("--incident-id", required=True)
-    parser.add_argument("--event", required=True)
-    parser.add_argument("--memory-dir", default="/memory")
-    return parser.parse_args()
-
-
-def build_memory(
-    incident_id: str,
-    alert: dict[str, Any],
-    prior: dict[str, Any] | None,
-) -> dict[str, Any]:
+def run_cycle(incident_id: str, alert: dict, prior: dict | None) -> dict:
+    """Execute one agent cycle: Nia search → classify → tasks → evidence → handoff."""
     cycle_count = int((prior or {}).get("cycleCount", 0)) + 1
-    now = iso_now()
-    severity = classify_severity(alert, prior)
-    classification = "suspected database exfiltration"
+    query = f"{alert.get('type', '')} {alert.get('affectedSystem', '')} incident response runbook"
+    nia = nia_search(query)
 
-    prior_tasks = list((prior or {}).get("tasks", []))
-    prior_evidence = list((prior or {}).get("evidence", []))
+    classification = classify(alert, nia, prior)
+    tasks = gen_tasks(incident_id, alert, nia, cycle_count)
+    evidence = gen_evidence(incident_id, alert, nia, cycle_count)
 
-    state: dict[str, Any] = {
+    state: dict = {
         "incidentId": incident_id,
-        "severity": severity,
-        "classification": classification,
-        "tasks": [*prior_tasks, *tasks_for_cycle(incident_id, cycle_count)],
-        "evidence": [*prior_evidence, *evidence_for_cycle(incident_id, alert, cycle_count)],
+        "severity": classification["severity"],
+        "classification": classification["classification"],
+        "tasks": [*(prior or {}).get("tasks", []), *tasks],
+        "evidence": [*(prior or {}).get("evidence", []), *evidence],
         "cycleCount": cycle_count,
-        "lastCycleAt": now,
+        "lastCycleAt": iso_now(),
     }
 
     if cycle_count >= 2:
-        state["handoffSummary"] = handoff_summary(state)
+        state["handoffSummary"] = gen_handoff(state, nia)
 
     return state
 
 
-def classify_severity(alert: dict[str, Any], prior: dict[str, Any] | None) -> str:
-    details = str(alert.get("details", "")).lower()
-    if prior and any(token in details for token in ("2gb", "2 gb", "exfil", "outbound transfer")):
-        return "critical"
-    if any(token in details for token in ("prod-db", "outbound", "unknown ip")):
-        return "high"
-    return "medium"
-
-
-def tasks_for_cycle(incident_id: str, cycle_count: int) -> list[dict[str, Any]]:
-    timestamp = int(time.time() * 1000)
-    if cycle_count == 1:
-        return [
-            task(incident_id, timestamp, 0, "contain", "security-ops", "Isolate prod-db-01 with the quarantine security group.", "in_progress"),
-            task(incident_id, timestamp, 1, "investigate", "security-ops", "Pull the last 60 minutes of egress logs for prod-db-01.", "in_progress"),
-            task(incident_id, timestamp, 2, "communicate", "on-call", "Notify the security lead with current severity and evidence.", "pending"),
-        ]
-    return [
-        task(incident_id, timestamp, 0, "investigate", "security-ops", "Mark egress log collection complete and attach 2GB transfer evidence.", "done"),
-        task(incident_id, timestamp, 1, "escalate", "security-lead", "Open the incident bridge and page the escalation owner.", "in_progress"),
-        task(incident_id, timestamp, 2, "communicate", "on-call", "Publish the Tensorlake handoff summary to Slack and dashboard.", "in_progress"),
-    ]
-
-
-def task(
-    incident_id: str,
-    timestamp: int,
-    index: int,
-    task_type: str,
-    assigned_to: str,
-    description: str,
-    status: str,
-) -> dict[str, Any]:
-    return {
-        "id": f"{incident_id}-task-{timestamp}-{index}",
-        "incidentId": incident_id,
-        "type": task_type,
-        "assignedTo": assigned_to,
-        "status": status,
-        "description": description,
-    }
-
-
-def evidence_for_cycle(
-    incident_id: str,
-    alert: dict[str, Any],
-    cycle_count: int,
-) -> list[dict[str, Any]]:
-    timestamp = int(time.time() * 1000)
-    if cycle_count == 1:
-        content = (
-            f"{alert.get('affectedSystem', 'affected system')} generated unusual outbound traffic. "
-            "Nia matched the database exfiltration runbook and a related prior postmortem."
+def nia_search(query: str) -> list[dict]:
+    """Search Nia for relevant runbook/postmortem context."""
+    api_key = os.environ.get("NIA_API_KEY", "")
+    if not api_key:
+        return []
+    try:
+        r = httpx.get(
+            f"{NIA_BASE}/contexts/search",
+            params={"query": query},
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=15,
         )
-    else:
-        content = (
-            "Follow-up egress evidence confirms the outbound transfer crossed the critical escalation threshold. "
-            "Tensorlake memory preserved the prior HIGH triage context before this cycle."
-        )
-    return [
-        {
-            "id": f"{incident_id}-ev-{timestamp}",
-            "incidentId": incident_id,
-            "source": "Tensorlake Python investigator",
-            "content": content,
-            "niaSourceRef": "Nia context: db-exfiltration runbook, prior prod-db postmortem, Tensorlake memory, Slack, dashboard",
-            "timestamp": iso_now(),
-        }
-    ]
+        r.raise_for_status()
+        data = r.json()
+        return (data.get("results") or data or [])[:3]
+    except Exception as exc:
+        print(f"[nia] search failed: {exc}", flush=True)
+        return []
 
 
-def handoff_summary(memory: dict[str, Any]) -> str:
-    evidence_count = len(memory.get("evidence", []))
-    task_count = len(memory.get("tasks", []))
-    return (
-        f"Incident {memory['incidentId']} is now CRITICAL after Python background execution in Tensorlake "
-        f"confirmed production database egress evidence. Tensorlake preserved {evidence_count} evidence items "
-        f"and {task_count} tasks across cycles. Immediate next steps: confirm host isolation, keep the incident "
-        "bridge active, notify the security lead, and continue collecting egress logs for handoff."
+def classify(alert: dict, nia: list[dict], prior: dict | None) -> dict:
+    """Classify incident severity + type using OpenAI gpt-4o."""
+    prior_ctx = f"Prior severity: {prior['severity']}. " if prior else ""
+    resp = oai().chat.completions.create(
+        model="gpt-4o",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "Senior security incident commander. Return JSON only."},
+            {"role": "user", "content": (
+                f"{prior_ctx}Alert: {json.dumps(alert)}\n"
+                f"Nia context: {json.dumps(nia[:2])}\n"
+                'Return: {"severity":"critical"|"high"|"medium"|"low","classification":"<type>"}'
+            )},
+        ],
     )
+    return json.loads(resp.choices[0].message.content)
+
+
+def gen_tasks(incident_id: str, alert: dict, nia: list[dict], cycle: int) -> list[dict]:
+    """Generate 3 response tasks grounded in Nia containment procedures."""
+    resp = oai().chat.completions.create(
+        model="gpt-4o",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "Security responder. Return JSON only."},
+            {"role": "user", "content": (
+                f"Alert: {json.dumps(alert)}, cycle {cycle}\n"
+                f"Nia procedures: {json.dumps(nia[:2])}\n"
+                'Return: {"tasks":[{"type":"contain"|"investigate"|"communicate"|"escalate",'
+                '"assignedTo":"<role>","description":"<action>"}]}'
+            )},
+        ],
+    )
+    raw = json.loads(resp.choices[0].message.content).get("tasks", [])
+    ts = int(time.time() * 1000)
+    return [
+        {"id": f"{incident_id}-task-{ts}-{i}", "incidentId": incident_id,
+         "type": t["type"], "assignedTo": t["assignedTo"],
+         "status": "pending", "description": t["description"]}
+        for i, t in enumerate(raw[:3])
+    ]
+
+
+def gen_evidence(incident_id: str, alert: dict, nia: list[dict], cycle: int) -> list[dict]:
+    """Generate evidence items with Nia source references."""
+    resp = oai().chat.completions.create(
+        model="gpt-4o",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "Security investigator. Return JSON only."},
+            {"role": "user", "content": (
+                f"Alert: {json.dumps(alert)}, cycle {cycle}\n"
+                f"Nia context: {json.dumps(nia[:2])}\n"
+                'Return: {"evidence":[{"source":"<source>","content":"<finding>",'
+                '"niaSourceRef":"<nia doc/section>"}]}'
+            )},
+        ],
+    )
+    raw = json.loads(resp.choices[0].message.content).get("evidence", [])
+    ts = int(time.time() * 1000)
+    return [
+        {"id": f"{incident_id}-ev-{ts}-{i}", "incidentId": incident_id,
+         "source": e["source"], "content": e["content"],
+         "niaSourceRef": e.get("niaSourceRef"), "timestamp": iso_now()}
+        for i, e in enumerate(raw[:2])
+    ]
+
+
+def gen_handoff(memory: dict, nia: list[dict]) -> str:
+    """Generate shift handoff summary using OpenAI and Nia escalation procedures."""
+    escalation = nia_search("escalation procedure shift handoff security incident")
+    resp = oai().chat.completions.create(
+        model="gpt-4o",
+        temperature=0,
+        messages=[
+            {"role": "system", "content": "Security comms specialist writing shift handoff summaries."},
+            {"role": "user", "content": (
+                f"Incident: {json.dumps({k: memory[k] for k in ('incidentId','severity','classification','cycleCount')})}\n"
+                f"Evidence: {json.dumps(memory.get('evidence', []))}\n"
+                f"Tasks: {json.dumps(memory.get('tasks', []))}\n"
+                f"Nia escalation procedures: {json.dumps((escalation or nia)[:1])}\n"
+                "Write shift handoff summary. Under 200 words, plain text, no markdown."
+            )},
+        ],
+    )
+    return resp.choices[0].message.content
 
 
 def iso_now() -> str:
+    """Return current UTC time as ISO 8601 string."""
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments."""
+    p = argparse.ArgumentParser()
+    p.add_argument("--incident-id", required=True)
+    p.add_argument("--event", required=True)
+    p.add_argument("--memory-dir", default="/memory")
+    return p.parse_args()
 
 
 if __name__ == "__main__":
