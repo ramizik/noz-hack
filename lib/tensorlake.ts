@@ -10,7 +10,7 @@ async function getMemorySandbox(): Promise<Sandbox> {
   return Sandbox.connect({ sandboxId });
 }
 
-export async function readMemory(): Promise<AgentMemory | null> {
+export async function readMemory(_incidentId?: string): Promise<AgentMemory | null> {
   try {
     const sb = await getMemorySandbox();
     const bytes = await sb.readFile(`${MEMORY_DIR}/${INCIDENT_ID}.json`);
