@@ -20,6 +20,8 @@ export default function DashboardPage() {
   const [incidents, setIncidents] = useState<AgentMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
+  const [triggering, setTriggering] = useState(false);
+  const [triggerMsg, setTriggerMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function poll() {
@@ -54,6 +56,26 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-4 text-xs text-slate-500">
           {lastPoll && <span>polled {lastPoll.toLocaleTimeString()}</span>}
+          <button
+            onClick={async () => {
+              setTriggering(true);
+              setTriggerMsg(null);
+              try {
+                const res = await fetch("/api/trigger", { method: "POST" });
+                const data = await res.json();
+                setTriggerMsg(res.ok ? `Triggered: ${data.requestId ?? "ok"}` : `Error: ${data.error}`);
+              } catch {
+                setTriggerMsg("Network error");
+              } finally {
+                setTriggering(false);
+              }
+            }}
+            disabled={triggering}
+            className="px-3 py-1 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30 disabled:opacity-50 transition-colors"
+          >
+            {triggering ? "Firing..." : "⚡ Trigger Agent"}
+          </button>
+          {triggerMsg && <span className="text-orange-400/70">{triggerMsg}</span>}
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-green-400">LIVE</span>

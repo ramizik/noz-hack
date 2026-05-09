@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 
 const APP_NAME = "sentinel_agent_cycle";
 
-export const maxDuration = 60;
-
-// Simulates an incoming alert by firing the Tensorlake Application agent cycle.
 export async function POST() {
   const apiKey = process.env.TENSORLAKE_API_KEY;
   if (!apiKey) {

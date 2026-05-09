@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const incidentId = searchParams.get("incidentId");
 
   if (incidentId) {
-    const memory = await readMemory(incidentId);
+    const memory = await readMemory();
     return NextResponse.json({ memory: memory ?? null });
   }
 
