@@ -99,93 +99,57 @@ export function IncidentStatusPanel({
   const isReview = memory.sourceKind === "prerecorded";
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto [scrollbar-width:none]">
-      <div
-        className={`relative overflow-hidden rounded-2xl border px-4 py-4 shadow-sm ring-1 ${
-          isReview
-            ? "border-slate-200 bg-slate-50 ring-slate-100"
-            : "border-rose-200 bg-rose-50 ring-rose-100"
-        }`}
-      >
-        <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow-sm">
-          {isReview ? "📁" : "🚨"}
+    <div className="flex h-full flex-col gap-3 overflow-y-auto [scrollbar-width:none]">
+      {/* Combined status + severity + details card */}
+      <div className={`overflow-hidden rounded-2xl border shadow-sm ${isReview ? "border-slate-200 bg-white" : "border-rose-200 bg-white"}`}>
+        {/* Status bar */}
+        <div className={`flex items-center justify-between px-4 py-2.5 ${isReview ? "bg-slate-50" : "bg-rose-50"}`}>
+          <div className="flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${isReview ? "bg-slate-400" : "animate-pulse bg-rose-500"}`} />
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${isReview ? "text-slate-500" : "text-rose-700"}`}>
+              {isReview ? "Past Incident Review" : "Incident Recovery Active"}
+            </span>
+          </div>
+          <span className="text-base">{isReview ? "📁" : "🚨"}</span>
         </div>
-        <div className="mb-4 flex items-center gap-2">
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              isReview ? "bg-slate-400" : "animate-pulse bg-rose-500"
-            }`}
-          />
-          <span
-            className={`text-[11px] font-bold uppercase tracking-widest ${
-              isReview ? "text-slate-600" : "text-rose-700"
-            }`}
-          >
-            {isReview ? "Past incident review" : "Incident recovery active"}
-          </span>
+
+        {/* Severity + ID row */}
+        <div className={`flex items-center justify-between border-t px-4 py-3 ${sev.bg} ${isReview ? "border-slate-100" : "border-rose-100"}`}>
+          <div>
+            <p className={`text-lg font-black uppercase tracking-widest leading-none ${sev.text}`}>
+              {memory.severity}
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-500">{memory.classification.replace(/_/g, " ")}</p>
+          </div>
+          <div className="text-right">
+            <span className="font-mono text-xs font-semibold text-slate-700">{memory.incidentId}</span>
+            {wasEscalated && (
+              <span className="ml-2 rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-orange-600 ring-1 ring-orange-200">
+                ↑ esc
+              </span>
+            )}
+          </div>
         </div>
-        <p className="max-w-[12rem] text-base font-black text-slate-900">
-          {isReview ? "Stored incident report" : "Suspicious patterns detected"}
-        </p>
-        <p className="mt-2 text-xs leading-relaxed text-slate-600">
-          {isReview
-            ? `Reviewing persisted Tensorlake memory for ${memory.alert?.affectedSystem ?? "affected host"}.`
-            : `Tensorlake started the response loop for ${memory.alert?.affectedSystem ?? "affected host"}.`}
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Metric label={isReview ? "Age" : "Duration"} value={incidentElapsed} />
-          <Metric label="Cycle" value={String(memory.cycleCount)} />
-        </div>
-      </div>
 
-      {/* Severity badge */}
-      <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${sev.bg} ${sev.ring} ring-1 ring-inset`}>
-        <div>
-          <p className={`text-xl font-black uppercase tracking-widest ${sev.text}`}>
-            {memory.severity}
-          </p>
-          <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
-            {memory.classification.replace(/_/g, " ")}
-          </p>
-        </div>
-        {wasEscalated && (
-          <span className="rounded-full bg-orange-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-orange-600 ring-1 ring-orange-200">
-            ↑ escalated
-          </span>
-        )}
-      </div>
-
-      {/* Incident metadata */}
-      <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-2 shadow-sm">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-          Incident Details
-        </p>
-
-        <Row label="ID">
-          <span className="font-mono text-xs text-slate-700">{memory.incidentId}</span>
-        </Row>
-
-        {memory.alert?.affectedSystem && (
-          <Row label="Affected">
-            <span className="text-xs text-slate-700">{memory.alert.affectedSystem}</span>
+        {/* Metadata rows */}
+        <div className="divide-y divide-slate-100 border-t border-slate-100 px-4">
+          {memory.alert?.affectedSystem && (
+            <Row label="Affected">
+              <span className="text-xs font-medium text-slate-700">{memory.alert.affectedSystem}</span>
+            </Row>
+          )}
+          <Row label="Detected">
+            <span className="font-mono text-[11px] text-slate-500">
+              {formatTime(memory.createdAt ?? memory.lastCycleAt)}
+            </span>
           </Row>
-        )}
-
-        <Row label="First detected">
-          <span className="font-mono text-xs text-slate-500">
-            {formatTime(memory.createdAt ?? memory.lastCycleAt)}
-          </span>
-        </Row>
-
-        <Row label="Cycles">
-          <span className="text-xs font-bold text-slate-800">{memory.cycleCount}</span>
-        </Row>
-
-        <Row label="Type">
-          <span className="text-xs text-slate-600">
-            {memory.classification.replace(/_/g, " ")}
-          </span>
-        </Row>
+          <Row label="Cycles">
+            <span className="text-xs font-bold text-slate-800">{memory.cycleCount}</span>
+          </Row>
+          <Row label="Duration">
+            <span className="font-mono text-xs text-slate-600">{incidentElapsed}</span>
+          </Row>
+        </div>
       </div>
 
       {/* Phase tracker */}
@@ -213,21 +177,10 @@ export function IncidentStatusPanel({
 }
 
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-rose-100 bg-white px-2.5 py-1.5">
-      <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
-        {label}
-      </p>
-      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{value}</p>
-    </div>
-  );
-}
-
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-2">
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-widest text-slate-400">
+    <div className="flex items-center justify-between gap-2 py-2">
+      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
         {label}
       </span>
       <div className="text-right">{children}</div>

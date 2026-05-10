@@ -5,7 +5,7 @@ import { useAgentStatus } from "./_hooks/useAgentStatus";
 import { derivePhase, deriveTimeline } from "@/lib/deriveView";
 import { TopBar } from "./_components/TopBar";
 import { IncidentStatusPanel } from "./_components/IncidentStatusPanel";
-import { ActivityFeed } from "./_components/ActivityFeed";
+import { ActivityFeed, type LiveLog } from "./_components/ActivityFeed";
 import { CenterPanel } from "./_components/CenterPanel";
 import { HandoffSummary } from "./_components/HandoffSummary";
 import { IncidentSwitcher, type DashboardMode } from "./_components/IncidentSwitcher";
@@ -31,6 +31,7 @@ export function DashboardClient() {
   const [showIncidentToast, setShowIncidentToast] = useState(false);
   const [resetPending, setResetPending] = useState(false);
   const [resetSignal, setResetSignal] = useState(0);
+  const [agentLogs, setAgentLogs] = useState<LiveLog[]>([]);
   const [logsHidden, setLogsHidden] = useState(false);
   const [logsPaused, setLogsPaused] = useState(false);
   const [mode, setMode] = useState<DashboardMode>("live");
@@ -69,6 +70,14 @@ export function DashboardClient() {
     setShowIncidentToast(true);
     setTimeout(() => setShowIncidentToast(false), 8000);
   }, []);
+
+  const handleAgentLog = useCallback((log: LiveLog) => {
+    setAgentLogs((prev) => [...prev, log]);
+  }, []);
+
+  useEffect(() => {
+    setAgentLogs([]);
+  }, [resetSignal]);
 
   const handleResetDemo = useCallback(async () => {
     setResetPending(true);
@@ -175,6 +184,7 @@ export function DashboardClient() {
                     monitoringStatus={monitoringStatus}
                     onCycleComplete={refresh}
                     onIncidentDetected={handleIncidentDetected}
+                    onAgentLog={handleAgentLog}
                     resetSignal={resetSignal}
                     hidden={logsHidden}
                     streamPaused={logsPaused}
@@ -212,9 +222,9 @@ export function DashboardClient() {
         <div className="flex min-h-0 w-[34%] flex-col p-4">
           <CenterPanel
             timeline={selectedTimeline}
-            tasks={selectedIncident?.tasks ?? []}
             actions={selectedIncident?.actions ?? []}
             notifications={selectedIncident?.notifications ?? []}
+            agentLogs={agentLogs}
           />
         </div>
       </div>

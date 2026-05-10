@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTriggerCycle, useInjectAlert } from "../_hooks/useTriggerCycle";
 import { useLiveLogStream, type LiveLog, type StreamPhase } from "../_hooks/useLiveLogStream";
 
+export type { LiveLog };
+
 const COUNTDOWN_SECONDS = 8;
 const AUTO_COUNTDOWN_DELAY_MS = 10000; // start countdown 10s after monitoring begins regardless of agent
 
@@ -13,6 +15,7 @@ type Props = {
   monitoringStatus: "all_clear" | "incident" | "idle";
   onCycleComplete?: () => void;
   onIncidentDetected?: () => void;
+  onAgentLog?: (log: LiveLog) => void;
   resetSignal?: number;
   hidden?: boolean;
   streamPaused?: boolean;
@@ -42,6 +45,7 @@ export function ActivityFeed({
   monitoringStatus,
   onCycleComplete,
   onIncidentDetected,
+  onAgentLog,
   resetSignal = 0,
   hidden = false,
   streamPaused = false,
@@ -60,12 +64,24 @@ export function ActivityFeed({
     : "idle";
 
   const { logs: liveLogs, clear } = useLiveLogStream(streamPhase, streamPaused);
+  const prevLenRef = useRef(0);
+  const onAgentLogRef = useRef(onAgentLog);
+  useEffect(() => { onAgentLogRef.current = onAgentLog; }, [onAgentLog]);
+  useEffect(() => {
+    const newLogs = liveLogs.slice(prevLenRef.current);
+    prevLenRef.current = liveLogs.length;
+    for (const log of newLogs) {
+      if (log.level === "AGENT") onAgentLogRef.current?.(log);
+    }
+  }, [liveLogs]);
+
   const trigger = useTriggerCycle(onCycleComplete);
   const injector = useInjectAlert(onCycleComplete);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     injectedRef.current = false;
+    prevLenRef.current = 0;
     setDemoPhase("idle");
     setCountdown(COUNTDOWN_SECONDS);
     clear();
