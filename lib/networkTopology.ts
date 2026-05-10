@@ -1,4 +1,4 @@
-import type { NetworkState } from "./types";
+import type { NetworkLink, NetworkState } from "./types";
 
 export const DEFAULT_NETWORK_STATE: NetworkState = {
   updatedAt: "2026-05-09T00:00:00Z",
@@ -32,4 +32,51 @@ export const DEFAULT_NETWORK_STATE: NetworkState = {
   ],
   changes: [],
 };
+
+export function applyDemoContainment(base: NetworkState): NetworkState {
+  const now = new Date().toISOString();
+  const linkPatch: Record<string, NetworkLink["status"]> = {
+    "corp-ws44": "blocked",
+    "wifi-ws44": "blocked",
+    "fw-internet": "blocked",
+  };
+  return {
+    ...base,
+    updatedAt: now,
+    links: [
+      ...base.links.map((l) =>
+        linkPatch[l.id] ? { ...l, status: linkPatch[l.id] as NetworkLink["status"] } : l
+      ),
+      {
+        id: "ws44-quarantine",
+        source: "ws-44",
+        target: "quarantine-vlan",
+        label: "VLAN 99",
+        status: "quarantined",
+      },
+    ],
+    changes: [
+      {
+        id: "demo-chg-1",
+        incidentId: "demo",
+        cycle: 1,
+        operation: "block",
+        target: "fw-internet (egress)",
+        reason: "prod-db-01 exfiltration confirmed — outbound egress blocked by containment-agent",
+        groundedSource: "DB Exfiltration Runbook · Immediate Containment Steps",
+        timestamp: now,
+      },
+      {
+        id: "demo-chg-2",
+        incidentId: "demo",
+        cycle: 1,
+        operation: "disconnect",
+        target: "ws-44",
+        reason: "lateral movement candidate — moved to quarantine VLAN 99",
+        groundedSource: "Nia-guided playbook · Endpoint Isolation",
+        timestamp: now,
+      },
+    ],
+  };
+}
 

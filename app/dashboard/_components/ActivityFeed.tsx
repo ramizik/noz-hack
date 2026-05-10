@@ -16,6 +16,7 @@ type Props = {
   onCycleComplete?: () => void;
   onIncidentDetected?: () => void;
   onAgentLog?: (log: LiveLog) => void;
+  onContainmentFired?: () => void;
   resetSignal?: number;
   hidden?: boolean;
   streamPaused?: boolean;
@@ -46,6 +47,7 @@ export function ActivityFeed({
   onCycleComplete,
   onIncidentDetected,
   onAgentLog,
+  onContainmentFired,
   resetSignal = 0,
   hidden = false,
   streamPaused = false,
@@ -63,7 +65,12 @@ export function ActivityFeed({
     : demoPhase === "countdown" || demoPhase === "incident" ? "incident"
     : "idle";
 
-  const { logs: liveLogs, clear } = useLiveLogStream(streamPhase, streamPaused);
+  const { logs: liveLogs, containmentFired, clear } = useLiveLogStream(streamPhase, streamPaused);
+  const onContainmentFiredRef = useRef(onContainmentFired);
+  useEffect(() => { onContainmentFiredRef.current = onContainmentFired; }, [onContainmentFired]);
+  useEffect(() => {
+    if (containmentFired) onContainmentFiredRef.current?.();
+  }, [containmentFired]);
   const prevLenRef = useRef(0);
   const onAgentLogRef = useRef(onAgentLog);
   useEffect(() => { onAgentLogRef.current = onAgentLog; }, [onAgentLog]);

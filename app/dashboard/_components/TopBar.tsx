@@ -57,14 +57,6 @@ export function TopBar({
         </button>
       </div>
 
-      {/* Monitoring status pill (only when no incident) */}
-      {!memory && monitoringStatus === "all_clear" && (
-        <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 ring-1 ring-inset ring-emerald-200">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-          <span className="text-xs text-emerald-700">Monitoring · All Clear</span>
-        </div>
-      )}
-
       {/* Incident metadata */}
       {memory && (
         <div className="flex items-center gap-3">
@@ -98,7 +90,17 @@ export function TopBar({
         {agentStatus === "active" ? (
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 ring-1 ring-inset ring-emerald-200">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            <span className="text-xs font-semibold text-emerald-700">Running</span>
+            <span className="text-xs font-semibold text-emerald-700">Agent Running</span>
+          </div>
+        ) : monitoringStatus === "all_clear" ? (
+          <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 ring-1 ring-inset ring-emerald-200">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            <span className="text-xs font-semibold text-emerald-700">
+              All Clear
+              {countdown > 0 && (
+                <span className="ml-1.5 font-mono font-normal text-emerald-500">· next in {countdown}s</span>
+              )}
+            </span>
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-inset ring-slate-200">

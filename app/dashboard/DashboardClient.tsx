@@ -12,7 +12,7 @@ import { IncidentSwitcher, type DashboardMode } from "./_components/IncidentSwit
 import { TensorlakeConsoleDrawer } from "./_components/TensorlakeConsoleDrawer";
 import { NetworkingDiagram } from "./_components/NetworkingDiagram";
 import { AboutModal } from "./_components/AboutModal";
-import { DEFAULT_NETWORK_STATE } from "@/lib/networkTopology";
+import { DEFAULT_NETWORK_STATE, applyDemoContainment } from "@/lib/networkTopology";
 
 export function DashboardClient() {
   const {
@@ -38,6 +38,7 @@ export function DashboardClient() {
   const [liveCenterView, setLiveCenterView] = useState<"logs" | "map">("logs");
   const [tensorlakeConsoleOpen, setTensorlakeConsoleOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [demoContainmentApplied, setDemoContainmentApplied] = useState(false);
 
   const liveIncident = useMemo(
     () => incidents.find((incident) => incident.sourceKind !== "prerecorded") ?? null,
@@ -50,7 +51,11 @@ export function DashboardClient() {
   );
 
   const selectedIncident = mode === "review" ? reviewIncident : liveIncident;
-  const selectedNetworkState = selectedIncident?.networkState ?? networkState ?? DEFAULT_NETWORK_STATE;
+  const baseNetworkState = selectedIncident?.networkState ?? networkState ?? DEFAULT_NETWORK_STATE;
+  const selectedNetworkState = useMemo(
+    () => (!selectedIncident && demoContainmentApplied) ? applyDemoContainment(baseNetworkState) : baseNetworkState,
+    [selectedIncident, demoContainmentApplied, baseNetworkState]
+  );
 
   const selectedTimeline = useMemo(
     () => (selectedIncident ? deriveTimeline(selectedIncident) : []),
@@ -77,6 +82,7 @@ export function DashboardClient() {
 
   useEffect(() => {
     setAgentLogs([]);
+    setDemoContainmentApplied(false);
   }, [resetSignal]);
 
   const handleResetDemo = useCallback(async () => {
@@ -188,6 +194,7 @@ export function DashboardClient() {
                     onCycleComplete={refresh}
                     onIncidentDetected={handleIncidentDetected}
                     onAgentLog={handleAgentLog}
+                    onContainmentFired={() => setDemoContainmentApplied(true)}
                     resetSignal={resetSignal}
                     hidden={logsHidden}
                     streamPaused={logsPaused}
