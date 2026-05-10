@@ -305,9 +305,8 @@ export function ActivityFeed({
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-400">
-        <span>sentinelops · network stream</span>
-        <span className="tabular-nums">{feed.length} events</span>
+      <div className="flex shrink-0 items-center justify-end border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-400">
+        <span className="tabular-nums">{feed.length} events captured</span>
       </div>
     </div>
   );

@@ -26,11 +26,10 @@ export function IncidentSwitcher({
 }: Props) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-3 flex items-center justify-between px-1">
+      <div className="mb-3 px-1">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-          Workspace
+          Incident View
         </span>
-        <span className="text-[10px] text-slate-400">demo / review</span>
       </div>
       <div className="space-y-1.5">
         <ModeButton

@@ -49,7 +49,7 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden">
       {/* Timeline */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex min-h-[220px] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
           <span className="text-xs font-semibold text-slate-700">Agent Timeline</span>
           <span className="text-[10px] tabular-nums text-slate-400">{timeline.length} events</span>
@@ -58,7 +58,7 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
         <div className="flex-1 overflow-y-auto px-4 py-3 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.3)_transparent]">
           {reversed.length === 0 ? (
             <p className="py-6 text-center text-xs text-slate-400">
-              Timeline populates after first agent cycle
+              Waiting for first agent cycle…
             </p>
           ) : (
             <ul className="space-y-2">
@@ -68,7 +68,7 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
                     {EVENT_ICON[ev.eventType]}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-mono text-[10px] tabular-nums text-slate-400">
                         {formatTime(ev.timestamp)}
                       </span>
@@ -110,7 +110,7 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
             <span className="text-[10px] tabular-nums text-slate-400">{actionItemCount}</span>
           )}
         </div>
-        <div className="max-h-64 overflow-y-auto px-4 py-3 [scrollbar-width:thin]">
+        <div className="max-h-48 overflow-y-auto px-4 py-3 [scrollbar-width:thin]">
           {actionItemCount === 0 ? (
             <p className="py-3 text-center text-xs text-slate-400">No actions yet</p>
           ) : (
@@ -122,18 +122,19 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs leading-snug text-slate-700">
+                      <p className="text-xs font-medium leading-snug text-slate-800">
                         {action.description}
                       </p>
                       <p className="mt-0.5 text-[10px] text-slate-400">
-                        {action.proposedBy} · cycle {action.cycle} · {action.target}
+                        {action.proposedBy} · cycle {action.cycle}
                       </p>
                     </div>
                     <Pill tone={ACTION_PILL[action.status]}>{ACTION_LABEL[action.status]}</Pill>
                   </div>
-                  <p className="mt-1 truncate text-[10px] text-teal-600">
-                    Grounded by Nia: {action.groundedSource}
-                  </p>
+                  <div className="mt-1.5 flex items-center gap-1 rounded-md bg-teal-50 px-2 py-1 ring-1 ring-inset ring-teal-100">
+                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-teal-600">Nia</span>
+                    <span className="min-w-0 truncate text-[10px] text-teal-700">{action.groundedSource}</span>
+                  </div>
                 </li>
               ))}
               {latestNotifications.map((notification) => (
@@ -194,7 +195,7 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
           {tasks.length === 0 ? (
             <p className="py-3 text-center text-xs text-slate-400">No tasks yet</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="max-h-36 space-y-2 overflow-y-auto [scrollbar-width:thin]">
               {tasks.map((task) => (
                 <li
                   key={task.id}

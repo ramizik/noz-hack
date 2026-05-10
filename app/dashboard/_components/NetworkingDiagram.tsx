@@ -14,24 +14,36 @@ const NODE_TONE: Record<NetworkNode["kind"], { fill: string; stroke: string; tex
   quarantine: { fill: "#fff1f2", stroke: "#e11d48", text: "#881337" },
 };
 
+const NODE_LEGEND: { kind: NetworkNode["kind"]; abbr: string; label: string }[] = [
+  { kind: "internet",    abbr: "WAN",  label: "Internet" },
+  { kind: "router",      abbr: "RTR",  label: "Router" },
+  { kind: "firewall",    abbr: "FW",   label: "Firewall" },
+  { kind: "switch",      abbr: "SW",   label: "Switch" },
+  { kind: "wifi",        abbr: "AP",   label: "Access Point" },
+  { kind: "server",      abbr: "SRV",  label: "Server" },
+  { kind: "database",    abbr: "DB",   label: "Database" },
+  { kind: "workstation", abbr: "WS",   label: "Workstation" },
+  { kind: "quarantine",  abbr: "QUAR", label: "Quarantine Zone" },
+];
+
 function icon(kind: NetworkNode["kind"]) {
   switch (kind) {
     case "router":
-      return "R";
+      return "RTR";
     case "firewall":
-      return "F";
+      return "FW";
     case "switch":
-      return "S";
+      return "SW";
     case "wifi":
-      return "W";
+      return "AP";
     case "database":
       return "DB";
     case "workstation":
-      return "PC";
+      return "WS";
     case "internet":
       return "WAN";
     case "quarantine":
-      return "Q";
+      return "QUAR";
     default:
       return "SRV";
   }
@@ -60,20 +72,37 @@ export function NetworkingDiagram({ network }: Props) {
             Tensorlake state · grounded by Nia topology docs
           </p>
         </div>
-        <div className="flex items-center gap-2 text-[10px]">
-          <span className="inline-flex items-center gap-1 text-slate-500">
-            <span className="h-2 w-4 rounded-full bg-slate-400" />
+        <div className="flex items-center gap-3 text-[10px]">
+          <span className="inline-flex items-center gap-1.5 text-slate-500">
+            <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94a3b8" strokeWidth="1.5"/></svg>
             active
           </span>
-          <span className="inline-flex items-center gap-1 text-rose-600">
-            <span className="h-2 w-4 rounded-full bg-rose-500" />
+          <span className="inline-flex items-center gap-1.5 text-rose-600">
+            <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="#e11d48" strokeWidth="1.5" strokeDasharray="3 2"/></svg>
             blocked
           </span>
-          <span className="inline-flex items-center gap-1 text-amber-600">
-            <span className="h-2 w-4 rounded-full bg-amber-500" />
+          <span className="inline-flex items-center gap-1.5 text-amber-600">
+            <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2"/></svg>
             quarantine
           </span>
         </div>
+      </div>
+
+      <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-slate-100 bg-white px-4 py-2">
+        {NODE_LEGEND.map(({ kind, abbr, label }) => {
+          const tone = NODE_TONE[kind];
+          return (
+            <span key={kind} className="inline-flex items-center gap-1">
+              <span
+                className="inline-flex h-4 min-w-[22px] items-center justify-center rounded px-1 text-[9px] font-black"
+                style={{ background: tone.fill, border: `1px solid ${tone.stroke}`, color: tone.text }}
+              >
+                {abbr}
+              </span>
+              <span className="text-[9px] text-slate-500">{label}</span>
+            </span>
+          );
+        })}
       </div>
 
       <div className="min-h-0 flex-1 px-3 py-3">
@@ -104,19 +133,19 @@ export function NetworkingDiagram({ network }: Props) {
                   strokeLinecap="round"
                 />
                 <rect
-                  x={midX - Math.max(5, link.label.length * 1.25)}
-                  y={midY - 3.2}
-                  width={Math.max(10, link.label.length * 2.5)}
-                  height="6.4"
-                  rx="1.2"
+                  x={midX - Math.max(4, link.label.length * 1.1)}
+                  y={midY - 2.5}
+                  width={Math.max(8, link.label.length * 2.2)}
+                  height="5"
+                  rx="1"
                   fill="white"
                   opacity="0.9"
                 />
                 <text
                   x={midX}
-                  y={midY + 1.6}
+                  y={midY + 1.2}
                   textAnchor="middle"
-                  className="fill-slate-500 text-[3px] font-medium"
+                  className="fill-slate-500 text-[2.4px] font-medium"
                 >
                   {link.status === "blocked" ? "DISCONNECTED" : link.label}
                 </text>
@@ -129,34 +158,34 @@ export function NetworkingDiagram({ network }: Props) {
             return (
               <g key={node.id} transform={`translate(${node.x} ${node.y})`} filter="url(#nodeShadow)">
                 <rect
-                  x="-7.5"
-                  y="-5.5"
-                  width="15"
-                  height="11"
-                  rx="1.6"
+                  x="-6"
+                  y="-4"
+                  width="12"
+                  height="8"
+                  rx="1.4"
                   fill={tone.fill}
                   stroke={tone.stroke}
-                  strokeWidth="0.8"
+                  strokeWidth="0.7"
                 />
                 <text
                   x="0"
-                  y="-0.6"
+                  y="0.8"
                   textAnchor="middle"
                   style={{ fill: tone.text }}
-                  className="text-[3.2px] font-black"
+                  className="text-[2.6px] font-black"
                 >
                   {icon(node.kind)}
                 </text>
                 <text
                   x="0"
-                  y="10"
+                  y="7.5"
                   textAnchor="middle"
-                  className="fill-slate-700 text-[3.1px] font-semibold"
+                  className="fill-slate-700 text-[2.6px] font-semibold"
                 >
                   {node.label}
                 </text>
                 {(node.ip || node.subnet) && (
-                  <text x="0" y="14" textAnchor="middle" className="fill-slate-400 text-[2.5px]">
+                  <text x="0" y="10.5" textAnchor="middle" className="fill-slate-400 text-[2.1px]">
                     {node.ip ?? node.subnet}
                   </text>
                 )}

@@ -33,6 +33,7 @@ export function DashboardClient() {
   const [logsHidden, setLogsHidden] = useState(false);
   const [logsPaused, setLogsPaused] = useState(false);
   const [mode, setMode] = useState<DashboardMode>("live");
+  const [liveCenterView, setLiveCenterView] = useState<"logs" | "map">("logs");
   const [tensorlakeConsoleOpen, setTensorlakeConsoleOpen] = useState(false);
 
   const liveIncident = useMemo(
@@ -129,23 +130,59 @@ export function DashboardClient() {
           />
         </div>
 
-        <div className="flex min-h-0 w-[44%] flex-col gap-4 border-r border-slate-200 p-4">
-          <div className="min-h-[310px] shrink-0">
-            <NetworkingDiagram network={selectedNetworkState} />
-          </div>
+        <div className="flex min-h-0 w-[44%] flex-col border-r border-slate-200 p-4">
           {mode === "live" ? (
-            <div className="min-h-0 flex-1">
-              <ActivityFeed
-                monitoringStatus={monitoringStatus}
-                onCycleComplete={refresh}
-                onIncidentDetected={handleIncidentDetected}
-                resetSignal={resetSignal}
-                hidden={logsHidden}
-                streamPaused={logsPaused}
-                onHide={() => setLogsHidden(true)}
-                onShow={() => setLogsHidden(false)}
-                onToggleStream={() => setLogsPaused((paused) => !paused)}
-              />
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+              <div className="flex shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                <div>
+                  <p className="text-xs font-bold text-slate-800">Live Demo Workspace</p>
+                  <p className="text-[11px] text-slate-400">
+                    Start the stream from Live Logs; inspect topology in Network Map.
+                  </p>
+                </div>
+                <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setLiveCenterView("logs")}
+                    className={`rounded-md px-3 py-1.5 text-[11px] font-semibold transition ${
+                      liveCenterView === "logs"
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-slate-500 hover:bg-white"
+                    }`}
+                  >
+                    Live Logs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLiveCenterView("map")}
+                    className={`rounded-md px-3 py-1.5 text-[11px] font-semibold transition ${
+                      liveCenterView === "map"
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-slate-500 hover:bg-white"
+                    }`}
+                  >
+                    Network Map
+                  </button>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1">
+                {liveCenterView === "logs" ? (
+                  <ActivityFeed
+                    monitoringStatus={monitoringStatus}
+                    onCycleComplete={refresh}
+                    onIncidentDetected={handleIncidentDetected}
+                    resetSignal={resetSignal}
+                    hidden={logsHidden}
+                    streamPaused={logsPaused}
+                    onHide={() => setLogsHidden(true)}
+                    onShow={() => setLogsHidden(false)}
+                    onToggleStream={() => setLogsPaused((paused) => !paused)}
+                  />
+                ) : (
+                  <NetworkingDiagram network={selectedNetworkState} />
+                )}
+              </div>
             </div>
           ) : selectedIncident?.handoffSummary ? (
             <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">

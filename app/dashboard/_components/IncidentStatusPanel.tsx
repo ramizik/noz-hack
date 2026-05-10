@@ -58,44 +58,38 @@ export function IncidentStatusPanel({
   if (!memory) {
     if (monitoringStatus === "all_clear") {
       return (
-        <div className="flex h-full flex-col justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-center shadow-sm">
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl shadow-sm ring-1 ring-emerald-100">
-              😊
-            </div>
-            <div className="mb-3 flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-              System OK
-            </div>
-            <p className="text-lg font-bold text-slate-800">No recovery in progress</p>
-            <p className="mt-2 max-w-[14rem] text-xs leading-relaxed text-slate-600">
-              {monitoringMessage ?? "Tensorlake monitoring reports no suspicious patterns."}
-            </p>
-            <p className="mt-4 text-[11px] font-medium text-emerald-700">
-              Last clean check {monitoringElapsed} ago
-            </p>
+        <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-6 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-2xl shadow-sm ring-1 ring-emerald-100">
+            🛡️
           </div>
-          <PlaceholderButtons tone="ok" />
+          <div className="mb-3 flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            All Clear
+          </div>
+          <p className="text-sm font-bold text-slate-800">No incidents detected</p>
+          <p className="mt-2 max-w-[13rem] text-xs leading-relaxed text-slate-600">
+            {monitoringMessage ?? "Tensorlake monitoring active — no suspicious patterns."}
+          </p>
+          <p className="mt-4 text-[11px] font-medium text-emerald-700">
+            Last check {monitoringElapsed} ago
+          </p>
         </div>
       );
     }
 
     return (
-      <div className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white px-5 py-6 text-center shadow-sm">
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 text-3xl ring-1 ring-sky-100">
-            🛡️
-          </div>
-          <div className="mb-3 flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-            <span className="h-2 w-2 rounded-full bg-slate-400" />
-            Standing by
-          </div>
-          <p className="text-lg font-bold text-slate-800">No active incident</p>
-          <p className="mt-2 max-w-[14rem] text-xs leading-relaxed text-slate-500">
-            SentinelOps is ready for the next Tensorlake monitoring cycle.
-          </p>
+      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-6 text-center shadow-sm">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50 text-2xl ring-1 ring-slate-200">
+          🛡️
         </div>
-        <PlaceholderButtons tone="idle" />
+        <div className="mb-3 flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          <span className="h-2 w-2 rounded-full bg-slate-400" />
+          Standing By
+        </div>
+        <p className="text-sm font-bold text-slate-800">No active incident</p>
+        <p className="mt-2 max-w-[13rem] text-xs leading-relaxed text-slate-500">
+          Start monitoring to begin the Tensorlake agent cycle.
+        </p>
       </div>
     );
   }
@@ -107,13 +101,13 @@ export function IncidentStatusPanel({
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto [scrollbar-width:none]">
       <div
-        className={`relative overflow-hidden rounded-2xl border px-5 py-5 shadow-sm ring-1 ${
+        className={`relative overflow-hidden rounded-2xl border px-4 py-4 shadow-sm ring-1 ${
           isReview
             ? "border-slate-200 bg-slate-50 ring-slate-100"
             : "border-rose-200 bg-rose-50 ring-rose-100"
         }`}
       >
-        <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-sm">
+        <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow-sm">
           {isReview ? "📁" : "🚨"}
         </div>
         <div className="mb-4 flex items-center gap-2">
@@ -130,7 +124,7 @@ export function IncidentStatusPanel({
             {isReview ? "Past incident review" : "Incident recovery active"}
           </span>
         </div>
-        <p className="max-w-[12rem] text-lg font-black text-slate-900">
+        <p className="max-w-[12rem] text-base font-black text-slate-900">
           {isReview ? "Stored incident report" : "Suspicious patterns detected"}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-slate-600">
@@ -138,30 +132,31 @@ export function IncidentStatusPanel({
             ? `Reviewing persisted Tensorlake memory for ${memory.alert?.affectedSystem ?? "affected host"}.`
             : `Tensorlake started the response loop for ${memory.alert?.affectedSystem ?? "affected host"}.`}
         </p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <Metric label={isReview ? "Age" : "Duration"} value={incidentElapsed} />
           <Metric label="Cycle" value={String(memory.cycleCount)} />
         </div>
-        {!isReview && <PlaceholderButtons tone="incident" />}
       </div>
 
       {/* Severity badge */}
-      <div className={`rounded-2xl border px-5 py-5 text-center ${sev.bg} ${sev.ring} ring-1 ring-inset`}>
-        <p className={`text-4xl font-black uppercase tracking-widest ${sev.text}`}>
-          {memory.severity}
-        </p>
-        {wasEscalated && (
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-orange-500">
-            ↑ escalated from HIGH
+      <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${sev.bg} ${sev.ring} ring-1 ring-inset`}>
+        <div>
+          <p className={`text-xl font-black uppercase tracking-widest ${sev.text}`}>
+            {memory.severity}
           </p>
+          <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+            {memory.classification.replace(/_/g, " ")}
+          </p>
+        </div>
+        {wasEscalated && (
+          <span className="rounded-full bg-orange-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-orange-600 ring-1 ring-orange-200">
+            ↑ escalated
+          </span>
         )}
-        <p className="mt-2 text-xs text-slate-500">
-          {memory.classification.replace(/_/g, " ")}
-        </p>
       </div>
 
       {/* Incident metadata */}
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 space-y-3 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-2 shadow-sm">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
           Incident Details
         </p>
@@ -194,15 +189,15 @@ export function IncidentStatusPanel({
       </div>
 
       {/* Phase tracker */}
-      <div className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-        <p className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+      <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
           Response Phase
         </p>
         <PhaseTracker phase={phase} />
       </div>
 
       {/* Memory state */}
-      <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
+      <div className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-teal-600">
           Tensorlake Memory
         </p>
@@ -217,37 +212,14 @@ export function IncidentStatusPanel({
   );
 }
 
-function PlaceholderButtons({ tone }: { tone: "ok" | "idle" | "incident" }) {
-  const styles =
-    tone === "incident"
-      ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
-      : tone === "ok"
-      ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-      : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-white";
-
-  return (
-    <div className="mt-5 grid grid-cols-2 gap-2">
-      {["Acknowledge", "Assign", "Escalate", "Notes"].map((label) => (
-        <button
-          key={label}
-          type="button"
-          className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${styles}`}
-          title={`${label} action placeholder`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-rose-100 bg-white px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+    <div className="rounded-lg border border-rose-100 bg-white px-2.5 py-1.5">
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
         {label}
       </p>
-      <p className="mt-1 font-mono text-sm font-bold text-slate-900">{value}</p>
+      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{value}</p>
     </div>
   );
 }
