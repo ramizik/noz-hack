@@ -12,6 +12,7 @@ type Props = {
   monitoringStatus: "all_clear" | "incident" | "idle";
   onResetDemo: () => void;
   onOpenTensorlakeConsole: () => void;
+  onOpenAbout: () => void;
   resetPending: boolean;
 };
 
@@ -22,6 +23,7 @@ export function TopBar({
   monitoringStatus,
   onResetDemo,
   onOpenTensorlakeConsole,
+  onOpenAbout,
   resetPending,
 }: Props) {
   const [countdown, setCountdown] = useState(nextCycleInSeconds);
@@ -46,6 +48,13 @@ export function TopBar({
           />
         </svg>
         <span className="font-semibold tracking-tight text-slate-800">{BRAND.NAME}</span>
+        <button
+          type="button"
+          onClick={onOpenAbout}
+          className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+        >
+          About
+        </button>
       </div>
 
       {/* Monitoring status pill (only when no incident) */}

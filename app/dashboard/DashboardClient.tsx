@@ -11,6 +11,7 @@ import { HandoffSummary } from "./_components/HandoffSummary";
 import { IncidentSwitcher, type DashboardMode } from "./_components/IncidentSwitcher";
 import { TensorlakeConsoleDrawer } from "./_components/TensorlakeConsoleDrawer";
 import { NetworkingDiagram } from "./_components/NetworkingDiagram";
+import { AboutModal } from "./_components/AboutModal";
 import { DEFAULT_NETWORK_STATE } from "@/lib/networkTopology";
 
 export function DashboardClient() {
@@ -35,6 +36,7 @@ export function DashboardClient() {
   const [mode, setMode] = useState<DashboardMode>("live");
   const [liveCenterView, setLiveCenterView] = useState<"logs" | "map">("logs");
   const [tensorlakeConsoleOpen, setTensorlakeConsoleOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const liveIncident = useMemo(
     () => incidents.find((incident) => incident.sourceKind !== "prerecorded") ?? null,
@@ -107,6 +109,7 @@ export function DashboardClient() {
         monitoringStatus={monitoringStatus}
         onResetDemo={handleResetDemo}
         onOpenTensorlakeConsole={() => setTensorlakeConsoleOpen(true)}
+        onOpenAbout={() => setAboutOpen(true)}
         resetPending={resetPending}
       />
 
@@ -167,7 +170,7 @@ export function DashboardClient() {
               </div>
 
               <div className="min-h-0 flex-1">
-                {liveCenterView === "logs" ? (
+                <div className={`h-full ${liveCenterView === "logs" ? "" : "hidden"}`}>
                   <ActivityFeed
                     monitoringStatus={monitoringStatus}
                     onCycleComplete={refresh}
@@ -179,9 +182,10 @@ export function DashboardClient() {
                     onShow={() => setLogsHidden(false)}
                     onToggleStream={() => setLogsPaused((paused) => !paused)}
                   />
-                ) : (
+                </div>
+                <div className={`h-full ${liveCenterView === "map" ? "" : "hidden"}`}>
                   <NetworkingDiagram network={selectedNetworkState} />
-                )}
+                </div>
               </div>
             </div>
           ) : selectedIncident?.handoffSummary ? (
@@ -219,6 +223,8 @@ export function DashboardClient() {
         open={tensorlakeConsoleOpen}
         onClose={() => setTensorlakeConsoleOpen(false)}
       />
+
+      {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
     </div>
   );
 }
