@@ -81,6 +81,9 @@ export function DashboardClient() {
 
   const handleResetDemo = useCallback(async () => {
     setResetPending(true);
+    setLogsHidden(false);
+    setLogsPaused(false);
+    setLiveCenterView("logs");
     try {
       await fetch("/api/reset-demo", { method: "POST" });
       setResetSignal((value) => value + 1);

@@ -54,11 +54,11 @@ export function AboutModal({ onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 [scrollbar-width:thin]"
+        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-100 bg-white px-6 pt-5 pb-4">
+        <div className="shrink-0 flex items-start justify-between border-b border-slate-100 bg-white px-6 pt-5 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-orange-500">
@@ -86,6 +86,7 @@ export function AboutModal({ onClose }: Props) {
           </button>
         </div>
 
+        <div className="overflow-y-auto flex-1 [scrollbar-width:thin]">
         <div className="space-y-6 px-6 py-5">
           {/* What it does */}
           <section>
@@ -113,7 +114,7 @@ export function AboutModal({ onClose }: Props) {
               <ol className="space-y-2">
                 {LOOP_STEPS.map(({ label, desc }, i) => (
                   <li key={label} className="flex items-start gap-3">
-                    <span className="relative z-10 mt-0.5 flex h-[22px] w-[44px] shrink-0 items-center justify-center rounded-md bg-slate-800 text-[10px] font-bold text-white">
+                    <span className="relative mt-0.5 flex h-[22px] w-[44px] shrink-0 items-center justify-center rounded-md bg-slate-800 text-[10px] font-bold text-white">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <div className="min-w-0 flex-1 pt-0.5">
@@ -169,6 +170,7 @@ export function AboutModal({ onClose }: Props) {
               ))}
             </div>
           </section>
+        </div>
         </div>
       </div>
     </div>

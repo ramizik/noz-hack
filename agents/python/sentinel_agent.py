@@ -342,6 +342,7 @@ def _dispatch_slack_outbox(notifications: list[dict]) -> list[dict]:
     token = os.environ.get("SLACK_BOT_TOKEN")
     channel = os.environ.get("SLACK_CHANNEL_ID")
     if not token or not channel:
+        print("[slack] MISSING SLACK_BOT_TOKEN or SLACK_CHANNEL_ID — skipping send", flush=True)
         return [
             {
                 **n,
@@ -352,11 +353,17 @@ def _dispatch_slack_outbox(notifications: list[dict]) -> list[dict]:
             for n in notifications
         ]
 
-    return [
+    pending = [n for n in notifications if n.get("status") in ("pending", "failed")]
+    print(f"[slack] Dispatching {len(pending)} pending notification(s) to channel {channel}", flush=True)
+    result = [
         _send_slack_notification(token, channel, n)
         if n.get("status") in ("pending", "failed") else n
         for n in notifications
     ]
+    sent = sum(1 for n in result if n.get("status") == "sent")
+    failed = sum(1 for n in result if n.get("status") == "failed")
+    print(f"[slack] Done: {sent} sent, {failed} failed", flush=True)
+    return result
 
 
 def _send_slack_notification(token: str, channel: str, notification: dict) -> dict:
@@ -379,11 +386,13 @@ def _send_slack_notification(token: str, channel: str, notification: dict) -> di
             timeout=15,
         ).json()
         if not posted.get("ok") or not posted.get("ts"):
+            err = posted.get("error", "Slack post failed")
+            print(f"[slack] FAILED dedupe={notification.get('dedupeKey')} error={err}", flush=True)
             return {
                 **notification,
                 "channel": resolved_channel,
                 "status": "failed",
-                "error": posted.get("error", "Slack post failed"),
+                "error": err,
             }
 
         posted_channel = posted.get("channel") or resolved_channel
@@ -398,8 +407,10 @@ def _send_slack_notification(token: str, channel: str, notification: dict) -> di
         }
         if permalink:
             result["permalink"] = permalink
+        print(f"[slack] SENT dedupe={notification.get('dedupeKey')} ts={posted['ts']}", flush=True)
         return result
     except Exception as exc:
+        print(f"[slack] EXCEPTION dedupe={notification.get('dedupeKey')} exc={exc}", flush=True)
         return {
             **notification,
             "channel": resolved_channel,

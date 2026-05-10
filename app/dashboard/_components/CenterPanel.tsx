@@ -3,6 +3,39 @@ import type { LiveLog } from "./ActivityFeed";
 import { ACTION_LABEL, ACTION_PILL } from "@/lib/constants";
 import { Pill } from "./Pill";
 
+interface LiveAction {
+  id: string;
+  description: string;
+  proposedBy: string;
+  status: "executing" | "completed";
+  groundedSource: string;
+  ts: string;
+}
+
+function deriveLiveActions(logs: LiveLog[]): LiveAction[] {
+  return logs
+    .filter((l) => l.level === "AGENT")
+    .map((log) => {
+      let proposedBy = "sentinel-agent";
+      let status: "executing" | "completed" = "executing";
+      let groundedSource = "Nia-guided playbook";
+
+      if (log.message.toLowerCase().includes("isolation") || log.message.toLowerCase().includes("egress clamp")) {
+        proposedBy = "containment-agent";
+        groundedSource = "DB Exfiltration Runbook · Immediate Containment";
+      } else if (log.message.toLowerCase().includes("slack")) {
+        proposedBy = "comms-agent";
+        groundedSource = "Escalation Procedures · Tier-2 Notification";
+        status = "completed";
+      } else if (log.message.toLowerCase().includes("investigation") || log.message.toLowerCase().includes("m365") || log.message.toLowerCase().includes("nia")) {
+        proposedBy = "investigation-agent";
+        groundedSource = "Nia RAG · M365 message trace playbook";
+      }
+
+      return { id: log.id, description: log.message, proposedBy, status, groundedSource, ts: log.ts };
+    });
+}
+
 const EVENT_ICON: Record<DerivedTimelineEvent["eventType"], string> = {
   agent_wake: "⚡",
   monitoring_check: "✓",
@@ -57,7 +90,10 @@ export function CenterPanel({ timeline, actions, notifications, agentLogs = [] }
   }).reverse();
 
   const latestNotifications = [...notifications].reverse().slice(0, 4);
-  const actionItemCount = actions.length + latestNotifications.length;
+  const liveActions = actions.length === 0 && latestNotifications.length === 0
+    ? deriveLiveActions(agentLogs)
+    : [];
+  const actionItemCount = actions.length + latestNotifications.length + liveActions.length;
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden">
@@ -156,6 +192,23 @@ export function CenterPanel({ timeline, actions, notifications, agentLogs = [] }
             <p className="py-3 text-center text-xs text-slate-400">No actions yet</p>
           ) : (
             <ul className="space-y-2">
+              {liveActions.map((action) => (
+                <li key={action.id} className="rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium leading-snug text-slate-800">{action.description}</p>
+                      <p className="mt-0.5 text-[10px] text-slate-400">{action.proposedBy} · live demo</p>
+                    </div>
+                    <Pill tone={action.status === "completed" ? "bg-emerald-100 text-emerald-700 ring-emerald-200" : "bg-sky-100 text-sky-700 ring-sky-200"}>
+                      {action.status === "completed" ? "Done" : "Executing"}
+                    </Pill>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-1 rounded-md bg-teal-50 px-2 py-1 ring-1 ring-inset ring-teal-100">
+                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-teal-600">Nia</span>
+                    <span className="min-w-0 truncate text-[10px] text-teal-700">{action.groundedSource}</span>
+                  </div>
+                </li>
+              ))}
               {actions.map((action) => (
                 <li
                   key={action.id}
