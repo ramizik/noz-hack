@@ -171,6 +171,7 @@ async def _incident_cycle(sb, alert: dict) -> dict:
     nia_results = [
         *_nia_search(query),
         *_nia_search("lateral movement microsoft account phishing mailbox workstation containment"),
+        *_nia_search("enterprise network diagram prod-db-01 10.0.1.45 ws-44 quarantine disconnect subnet"),
     ][:5]
     print(f"[sentinel] Nia returned {len(nia_results)} results", flush=True)
     _emit_event("nia.search.completed", incidentId=INCIDENT_ID, hits=len(nia_results), query=query)
@@ -192,6 +193,7 @@ async def _incident_cycle(sb, alert: dict) -> dict:
     actions = _gen_actions(INCIDENT_ID, alert, nia_results, cycle_count, ts, prior)
     critical_logs = _gen_critical_logs(INCIDENT_ID, alert, cycle_count, ts)
     progress_history = _gen_progress_history(INCIDENT_ID, cycle_count, ts, prior, actions, evidence)
+    network_state = _build_network_state(INCIDENT_ID, alert, nia_results, cycle_count, ts, prior)
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     state: dict = {
@@ -205,6 +207,7 @@ async def _incident_cycle(sb, alert: dict) -> dict:
         "criticalLogs": [*(prior or {}).get("criticalLogs", []), *critical_logs],
         "progressHistory": [*(prior or {}).get("progressHistory", []), *progress_history],
         "notifications": (prior or {}).get("notifications", []),
+        "networkState": network_state,
         "cycleCount": cycle_count,
         "lastCycleAt": now,
         "createdAt": (prior or {}).get("createdAt", now),
@@ -738,6 +741,191 @@ def _gen_critical_logs(incident_id: str, alert: dict, cycle: int, ts: int) -> li
             "timestamp": now,
         },
     ]
+
+
+def _base_network_state(now: str) -> dict:
+    return {
+        "updatedAt": now,
+        "groundedSource": "data/runbooks/enterprise_network_diagram_context.md#baseline-diagram-codes",
+        "nodes": [
+            {"id": "internet", "label": "Internet", "kind": "internet", "x": 8, "y": 56},
+            {"id": "edge-router-01", "label": "Edge Router", "kind": "router", "ip": "10.0.8.1", "x": 20, "y": 28},
+            {"id": "fw-egress-01", "label": "Egress FW", "kind": "firewall", "ip": "10.0.8.2", "x": 36, "y": 28},
+            {"id": "prod-app-switch", "label": "Prod App", "kind": "switch", "subnet": "10.0.1.0/24", "x": 52, "y": 18},
+            {"id": "atlas-db-switch", "label": "Atlas DB", "kind": "switch", "subnet": "10.42.18.0/24", "x": 52, "y": 46},
+            {"id": "corp-access-switch", "label": "Corp Access", "kind": "switch", "subnet": "10.20.44.0/24", "x": 52, "y": 74},
+            {"id": "corp-wifi", "label": "Corp Wi-Fi", "kind": "wifi", "subnet": "10.20.80.0/22", "x": 36, "y": 74},
+            {"id": "prod-api-01", "label": "prod-api-01", "kind": "server", "ip": "10.0.1.12", "x": 74, "y": 14},
+            {"id": "prod-db-01", "label": "prod-db-01", "kind": "database", "ip": "10.0.1.45 / 10.42.18.27", "x": 74, "y": 38},
+            {"id": "fileserver01", "label": "fileserver01", "kind": "server", "ip": "10.0.9.21", "x": 74, "y": 64},
+            {"id": "ws-44", "label": "ws-44", "kind": "workstation", "ip": "10.20.44.44", "x": 74, "y": 84},
+            {"id": "quarantine-vlan", "label": "Quarantine", "kind": "quarantine", "subnet": "10.99.0.0/24", "x": 92, "y": 50},
+        ],
+        "links": [
+            {"id": "internet-edge", "source": "internet", "target": "edge-router-01", "label": "100BaseTX", "status": "active"},
+            {"id": "edge-fw", "source": "edge-router-01", "target": "fw-egress-01", "label": "100BaseTX", "status": "active"},
+            {"id": "fw-prod-app", "source": "fw-egress-01", "target": "prod-app-switch", "label": "Ethernet", "status": "active"},
+            {"id": "fw-atlas-db", "source": "fw-egress-01", "target": "atlas-db-switch", "label": "Fiber", "status": "active"},
+            {"id": "fw-internet", "source": "fw-egress-01", "target": "internet", "label": "egress", "status": "active"},
+            {"id": "prod-app-api", "source": "prod-app-switch", "target": "prod-api-01", "label": "10.0.1.12", "status": "active"},
+            {"id": "prod-app-db", "source": "prod-app-switch", "target": "prod-db-01", "label": "10.0.1.45", "status": "active"},
+            {"id": "atlas-db-prod-db", "source": "atlas-db-switch", "target": "prod-db-01", "label": "10.42.18.27", "status": "active"},
+            {"id": "corp-files", "source": "corp-access-switch", "target": "fileserver01", "label": "SMB", "status": "active"},
+            {"id": "corp-ws44", "source": "corp-access-switch", "target": "ws-44", "label": "wired", "status": "active"},
+            {"id": "wifi-ws44", "source": "corp-wifi", "target": "ws-44", "label": "wifi", "status": "active"},
+        ],
+        "changes": [],
+    }
+
+
+def _set_link_status(network: dict, link_id: str, status: str, source: str) -> None:
+    for link in network["links"]:
+        if link["id"] == link_id:
+            link["status"] = status
+            link["sourceRef"] = source
+            return
+
+
+def _add_link_once(network: dict, link: dict) -> None:
+    if not any(existing.get("id") == link["id"] for existing in network["links"]):
+        network["links"].append(link)
+
+
+def _network_change(
+    incident_id: str,
+    ts: int,
+    index: int,
+    cycle: int,
+    operation: str,
+    target: str,
+    reason: str,
+    source: str,
+    now: str,
+) -> dict:
+    return {
+        "id": f"{incident_id}-net-{ts}-{index}",
+        "incidentId": incident_id,
+        "cycle": cycle,
+        "operation": operation,
+        "target": target,
+        "reason": reason,
+        "groundedSource": source,
+        "timestamp": now,
+    }
+
+
+def _build_network_state(
+    incident_id: str,
+    alert: dict,
+    nia: list,
+    cycle: int,
+    ts: int,
+    prior: dict | None,
+) -> dict:
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    source = "data/runbooks/enterprise_network_diagram_context.md#incident-containment-codes"
+    policy_source = _source_ref(nia, source)
+    network = _base_network_state(now)
+    changes = list(((prior or {}).get("networkState") or {}).get("changes", []))
+    host = alert.get("affectedSystem", "prod-db-01")
+
+    _set_link_status(network, "prod-app-db", "blocked", source)
+    _set_link_status(network, "atlas-db-prod-db", "blocked", source)
+    _set_link_status(network, "fw-internet", "blocked", policy_source)
+    _add_link_once(
+        network,
+        {
+            "id": "quarantine-prod-db",
+            "source": host,
+            "target": "quarantine-vlan",
+            "label": "forensics",
+            "status": "quarantined",
+            "sourceRef": source,
+        },
+    )
+    changes.extend(
+        [
+            _network_change(
+                incident_id,
+                ts,
+                0,
+                cycle,
+                "disconnect",
+                "prod-db-01 from 10.0.1.0/24 and 10.42.18.0/24",
+                "restricted database host initiated unapproved outbound transfer",
+                source,
+                now,
+            ),
+            _network_change(
+                incident_id,
+                ts,
+                1,
+                cycle,
+                "connect",
+                "prod-db-01 to quarantine-vlan",
+                "preserve telemetry and forensic access while blocking production paths",
+                source,
+                now,
+            ),
+            _network_change(
+                incident_id,
+                ts,
+                2,
+                cycle,
+                "block",
+                "egress to 185.220.101.45 and 203.0.113.42",
+                "external destination is not approved for database egress",
+                policy_source,
+                now,
+            ),
+        ]
+    )
+
+    if cycle >= 2:
+        _set_link_status(network, "corp-ws44", "blocked", source)
+        _set_link_status(network, "wifi-ws44", "blocked", source)
+        _add_link_once(
+            network,
+            {
+                "id": "quarantine-ws44",
+                "source": "ws-44",
+                "target": "quarantine-vlan",
+                "label": "edr",
+                "status": "quarantined",
+                "sourceRef": source,
+            },
+        )
+        changes.extend(
+            [
+                _network_change(
+                    incident_id,
+                    ts,
+                    3,
+                    cycle,
+                    "disconnect",
+                    "ws-44 from corp-access-switch and corp-wifi",
+                    "lateral movement signal from compromised workstation to database subnet",
+                    source,
+                    now,
+                ),
+                _network_change(
+                    incident_id,
+                    ts,
+                    4,
+                    cycle,
+                    "connect",
+                    "ws-44 to quarantine-vlan",
+                    "preserve endpoint evidence while stopping corporate network access",
+                    source,
+                    now,
+                ),
+            ]
+        )
+
+    network["updatedAt"] = now
+    network["groundedSource"] = source
+    network["changes"] = changes[-8:]
+    return network
 
 
 def _gen_progress_history(

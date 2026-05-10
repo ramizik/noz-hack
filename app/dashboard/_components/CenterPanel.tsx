@@ -1,7 +1,6 @@
 import type { AgentAction, DerivedTimelineEvent, SlackNotification, Task } from "@/lib/types";
 import { ACTION_LABEL, ACTION_PILL, TASK_LABEL, TASK_PILL } from "@/lib/constants";
 import { Pill } from "./Pill";
-import { SlackCommunications } from "./SlackCommunications";
 
 const EVENT_ICON: Record<DerivedTimelineEvent["eventType"], string> = {
   agent_wake: "⚡",
@@ -44,6 +43,8 @@ type Props = {
 
 export function CenterPanel({ timeline, tasks, actions, notifications }: Props) {
   const reversed = [...timeline].reverse();
+  const latestNotifications = [...notifications].reverse().slice(0, 4);
+  const actionItemCount = actions.length + latestNotifications.length;
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden">
@@ -105,12 +106,12 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
       <div className="shrink-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
           <span className="text-xs font-semibold text-slate-700">Autonomous Actions</span>
-          {actions.length > 0 && (
-            <span className="text-[10px] tabular-nums text-slate-400">{actions.length}</span>
+          {actionItemCount > 0 && (
+            <span className="text-[10px] tabular-nums text-slate-400">{actionItemCount}</span>
           )}
         </div>
-        <div className="max-h-48 overflow-y-auto px-4 py-3 [scrollbar-width:thin]">
-          {actions.length === 0 ? (
+        <div className="max-h-64 overflow-y-auto px-4 py-3 [scrollbar-width:thin]">
+          {actionItemCount === 0 ? (
             <p className="py-3 text-center text-xs text-slate-400">No actions yet</p>
           ) : (
             <ul className="space-y-2">
@@ -135,12 +136,51 @@ export function CenterPanel({ timeline, tasks, actions, notifications }: Props) 
                   </p>
                 </li>
               ))}
+              {latestNotifications.map((notification) => (
+                <li
+                  key={notification.id}
+                  className="rounded-lg border border-emerald-100 bg-emerald-50/70 px-3 py-2.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs leading-snug text-slate-700">
+                        Sent Slack communication: {notification.text}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-slate-500">
+                        comms-agent · Slack · {notification.channel || "configured channel"}
+                      </p>
+                    </div>
+                    <Pill
+                      tone={
+                        notification.status === "sent"
+                          ? "bg-emerald-100 text-emerald-700 ring-emerald-200"
+                          : notification.status === "pending"
+                          ? "bg-amber-100 text-amber-700 ring-amber-200"
+                          : "bg-rose-100 text-rose-700 ring-rose-200"
+                      }
+                    >
+                      {notification.status}
+                    </Pill>
+                  </div>
+                  {notification.permalink && (
+                    <a
+                      className="mt-1 inline-block text-[10px] text-emerald-700 hover:text-emerald-600"
+                      href={notification.permalink}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open in Slack
+                    </a>
+                  )}
+                  {notification.error && (
+                    <p className="mt-1 text-[10px] text-rose-600">{notification.error}</p>
+                  )}
+                </li>
+              ))}
             </ul>
           )}
         </div>
       </div>
-
-      <SlackCommunications notifications={notifications} />
 
       {/* Tasks */}
       <div className="shrink-0 rounded-2xl border border-slate-200 bg-white shadow-sm">

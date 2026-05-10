@@ -1,6 +1,6 @@
 # SentinelOps Roadmap
 
-Last updated: 2026-05-09 5:15pm PT
+Last updated: 2026-05-09 5:20pm PT
 Deadline: 2026-05-09 6:00pm PT
 
 ## North Star
@@ -98,8 +98,9 @@ The demo must prove:
 - [x] Alert injection route writes to Tensorlake and fires the agent.
 - [x] Dashboard can display monitoring, incident, timeline, task, evidence, Nia, and handoff surfaces.
 - [x] Dashboard shows an Autonomous Actions ledger grounded in Nia sources.
-- [x] Dashboard shows latest Slack communications from Tensorlake memory, including sent/failed status and permalinks.
+- [x] Dashboard shows Slack communications inside Autonomous Actions, including sent/failed status and permalinks.
 - [x] Dashboard has a Reset Demo control for clean rehearsals.
+- [x] Dashboard has an always-visible Networking Diagram widget backed by Tensorlake incident memory.
 - [x] Left status panel shows friendly all-clear/standby visuals and switches to active recovery with Tensorlake-backed incident duration.
 - [x] Dashboard can open a Tensorlake Console drawer backed by the real Tensorlake application logs API.
 - [x] Live demo logs include identity, mailbox, endpoint, phishing attachment, and continuing post-containment suspicious activity.
@@ -171,6 +172,7 @@ Outcome: Tensorlake is undeniably the execution and memory layer.
   - SIEM/firewall/EDR log field guide
   - containment action policy
   - data-handling and notification policy
+- [x] Add Nia-indexed enterprise network diagram context with coded entities, links, disconnect/connect rules, and quarantine rules.
 - [ ] Store enough Nia source metadata in agent memory for the UI to show document title, section/path, excerpt, and why selected.
 - [ ] Update prompts so tasks/evidence cite exact Nia source names.
 - [ ] Make Nia Navigator copy crisp: source, section, relevance, applied action.
@@ -266,6 +268,10 @@ These are ready to implement when asked, in priority order.
   - "Queried Nia"
   - "Wrote memory"
   - "Sleeping until next cycle"
+- [x] Networking diagram:
+  - Baseline enterprise topology is visible before incident.
+  - Agent writes simulated disconnect/connect network state to Tensorlake memory.
+  - Dashboard shows blocked production/database links and quarantine links after containment.
 - [x] Better runbook corpus:
   - Added prior postmortem for exfiltration from same subnet.
   - Added escalation/contact procedure.

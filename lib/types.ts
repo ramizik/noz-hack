@@ -60,6 +60,57 @@ export interface AgentAction {
   timestamp: string;
 }
 
+export type NetworkNodeKind =
+  | "router"
+  | "firewall"
+  | "switch"
+  | "wifi"
+  | "server"
+  | "database"
+  | "workstation"
+  | "internet"
+  | "quarantine";
+
+export type NetworkLinkStatus = "active" | "blocked" | "quarantined";
+
+export interface NetworkNode {
+  id: string;
+  label: string;
+  kind: NetworkNodeKind;
+  ip?: string;
+  subnet?: string;
+  x: number;
+  y: number;
+}
+
+export interface NetworkLink {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+  status: NetworkLinkStatus;
+  sourceRef?: string;
+}
+
+export interface NetworkChange {
+  id: string;
+  incidentId: string;
+  cycle: number;
+  operation: "disconnect" | "connect" | "block";
+  target: string;
+  reason: string;
+  groundedSource: string;
+  timestamp: string;
+}
+
+export interface NetworkState {
+  updatedAt: string;
+  groundedSource: string;
+  nodes: NetworkNode[];
+  links: NetworkLink[];
+  changes: NetworkChange[];
+}
+
 export interface TimelineEvent {
   id: string;
   incidentId: string;
@@ -78,6 +129,7 @@ export interface AgentMemory {
   progressHistory?: IncidentProgressEntry[];
   criticalLogs?: CriticalIncidentLog[];
   notifications?: SlackNotification[];
+  networkState?: NetworkState;
   cycleCount: number;
   lastCycleAt: string;
   createdAt?: string;
@@ -203,6 +255,7 @@ export interface AgentStatusResponse {
   monitoringStatus: "all_clear" | "incident" | "idle";
   monitoringMessage: string | null;
   monitoringLastCheckedAt: string | null;
+  networkState: NetworkState;
 }
 
 export interface TensorlakeLogEntry {

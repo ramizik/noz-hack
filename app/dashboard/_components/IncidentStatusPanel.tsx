@@ -102,30 +102,47 @@ export function IncidentStatusPanel({
 
   const sev = SEV_STYLES[memory.severity] ?? SEV_STYLES.low;
   const wasEscalated = memory.cycleCount >= 2 && memory.severity === "critical";
+  const isReview = memory.sourceKind === "prerecorded";
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto [scrollbar-width:none]">
-      <div className="relative overflow-hidden rounded-2xl border border-rose-200 bg-rose-50 px-5 py-5 shadow-sm ring-1 ring-rose-100">
+      <div
+        className={`relative overflow-hidden rounded-2xl border px-5 py-5 shadow-sm ring-1 ${
+          isReview
+            ? "border-slate-200 bg-slate-50 ring-slate-100"
+            : "border-rose-200 bg-rose-50 ring-rose-100"
+        }`}
+      >
         <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-sm">
-          🚨
+          {isReview ? "📁" : "🚨"}
         </div>
         <div className="mb-4 flex items-center gap-2">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500" />
-          <span className="text-[11px] font-bold uppercase tracking-widest text-rose-700">
-            Incident recovery active
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${
+              isReview ? "bg-slate-400" : "animate-pulse bg-rose-500"
+            }`}
+          />
+          <span
+            className={`text-[11px] font-bold uppercase tracking-widest ${
+              isReview ? "text-slate-600" : "text-rose-700"
+            }`}
+          >
+            {isReview ? "Past incident review" : "Incident recovery active"}
           </span>
         </div>
         <p className="max-w-[12rem] text-lg font-black text-slate-900">
-          Suspicious patterns detected
+          {isReview ? "Stored incident report" : "Suspicious patterns detected"}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-slate-600">
-          Tensorlake started the response loop for {memory.alert?.affectedSystem ?? "affected host"}.
+          {isReview
+            ? `Reviewing persisted Tensorlake memory for ${memory.alert?.affectedSystem ?? "affected host"}.`
+            : `Tensorlake started the response loop for ${memory.alert?.affectedSystem ?? "affected host"}.`}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <Metric label="Duration" value={incidentElapsed} />
+          <Metric label={isReview ? "Age" : "Duration"} value={incidentElapsed} />
           <Metric label="Cycle" value={String(memory.cycleCount)} />
         </div>
-        <PlaceholderButtons tone="incident" />
+        {!isReview && <PlaceholderButtons tone="incident" />}
       </div>
 
       {/* Severity badge */}

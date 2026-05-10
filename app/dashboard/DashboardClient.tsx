@@ -8,21 +8,22 @@ import { IncidentStatusPanel } from "./_components/IncidentStatusPanel";
 import { ActivityFeed } from "./_components/ActivityFeed";
 import { CenterPanel } from "./_components/CenterPanel";
 import { HandoffSummary } from "./_components/HandoffSummary";
-import { IncidentSwitcher } from "./_components/IncidentSwitcher";
+import { IncidentSwitcher, type DashboardMode } from "./_components/IncidentSwitcher";
 import { TensorlakeConsoleDrawer } from "./_components/TensorlakeConsoleDrawer";
+import { NetworkingDiagram } from "./_components/NetworkingDiagram";
+import { DEFAULT_NETWORK_STATE } from "@/lib/networkTopology";
 
 export function DashboardClient() {
   const {
     incidents,
-    latest,
     loading,
-    lastPoll,
     agentStatus,
     nextCycleInSeconds,
     phase,
     monitoringStatus,
     monitoringMessage,
     monitoringLastCheckedAt,
+    networkState,
     refresh,
   } = useAgentStatus();
 
@@ -31,15 +32,21 @@ export function DashboardClient() {
   const [resetSignal, setResetSignal] = useState(0);
   const [logsHidden, setLogsHidden] = useState(false);
   const [logsPaused, setLogsPaused] = useState(false);
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const [mode, setMode] = useState<DashboardMode>("live");
+  const [tensorlakeConsoleOpen, setTensorlakeConsoleOpen] = useState(false);
 
-  const selectedIncident = useMemo(() => {
-    if (selectedIncidentId) {
-      const match = incidents.find((incident) => incident.incidentId === selectedIncidentId);
-      if (match) return match;
-    }
-    return latest ?? null;
-  }, [incidents, latest, selectedIncidentId]);
+  const liveIncident = useMemo(
+    () => incidents.find((incident) => incident.sourceKind !== "prerecorded") ?? null,
+    [incidents]
+  );
+
+  const reviewIncident = useMemo(
+    () => incidents.find((incident) => incident.sourceKind === "prerecorded") ?? null,
+    [incidents]
+  );
+
+  const selectedIncident = mode === "review" ? reviewIncident : liveIncident;
+  const selectedNetworkState = selectedIncident?.networkState ?? networkState ?? DEFAULT_NETWORK_STATE;
 
   const selectedTimeline = useMemo(
     () => (selectedIncident ? deriveTimeline(selectedIncident) : []),
@@ -52,20 +59,8 @@ export function DashboardClient() {
   );
 
   useEffect(() => {
-    if (!selectedIncidentId && latest) {
-      setSelectedIncidentId(latest.incidentId);
-      return;
-    }
-
-    if (
-      selectedIncidentId &&
-      incidents.length > 0 &&
-      !incidents.some((incident) => incident.incidentId === selectedIncidentId)
-    ) {
-      setSelectedIncidentId(latest?.incidentId ?? incidents[0]?.incidentId ?? null);
-    }
-  }, [incidents, latest, selectedIncidentId]);
-  const [tensorlakeConsoleOpen, setTensorlakeConsoleOpen] = useState(false);
+    if (mode === "review" && !reviewIncident) setMode("live");
+  }, [mode, reviewIncident]);
 
   const handleIncidentDetected = useCallback(() => {
     setShowIncidentToast(true);
@@ -105,8 +100,7 @@ export function DashboardClient() {
       )}
 
       <TopBar
-        memory={latest ?? null}
-        lastPoll={lastPoll}
+        memory={mode === "review" ? reviewIncident : liveIncident}
         agentStatus={agentStatus}
         nextCycleInSeconds={nextCycleInSeconds}
         monitoringStatus={monitoringStatus}
@@ -121,9 +115,10 @@ export function DashboardClient() {
             <p className="animate-pulse text-center text-xs text-slate-400 py-4">Connecting…</p>
           )}
           <IncidentSwitcher
-            incidents={incidents}
-            selectedIncidentId={selectedIncident?.incidentId ?? null}
-            onSelect={setSelectedIncidentId}
+            mode={mode}
+            liveIncident={liveIncident}
+            reviewIncident={reviewIncident}
+            onModeChange={setMode}
           />
           <IncidentStatusPanel
             memory={selectedIncident}
@@ -134,18 +129,43 @@ export function DashboardClient() {
           />
         </div>
 
-        <div className="flex min-h-0 w-[44%] flex-col border-r border-slate-200 p-4">
-          <ActivityFeed
-            monitoringStatus={monitoringStatus}
-            onCycleComplete={refresh}
-            onIncidentDetected={handleIncidentDetected}
-            resetSignal={resetSignal}
-            hidden={logsHidden}
-            streamPaused={logsPaused}
-            onHide={() => setLogsHidden(true)}
-            onShow={() => setLogsHidden(false)}
-            onToggleStream={() => setLogsPaused((paused) => !paused)}
-          />
+        <div className="flex min-h-0 w-[44%] flex-col gap-4 border-r border-slate-200 p-4">
+          <div className="min-h-[310px] shrink-0">
+            <NetworkingDiagram network={selectedNetworkState} />
+          </div>
+          {mode === "live" ? (
+            <div className="min-h-0 flex-1">
+              <ActivityFeed
+                monitoringStatus={monitoringStatus}
+                onCycleComplete={refresh}
+                onIncidentDetected={handleIncidentDetected}
+                resetSignal={resetSignal}
+                hidden={logsHidden}
+                streamPaused={logsPaused}
+                onHide={() => setLogsHidden(true)}
+                onShow={() => setLogsHidden(false)}
+                onToggleStream={() => setLogsPaused((paused) => !paused)}
+              />
+            </div>
+          ) : selectedIncident?.handoffSummary ? (
+            <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
+              <HandoffSummary
+                summary={selectedIncident.handoffSummary}
+                cycleCount={selectedIncident.cycleCount}
+                lastCycleAt={selectedIncident.lastCycleAt}
+                handoff={selectedIncident.shiftHandoff}
+                criticalLogs={selectedIncident.criticalLogs ?? []}
+                progressHistory={selectedIncident.progressHistory ?? []}
+              />
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">No past report loaded</p>
+                <p className="mt-1 text-xs text-slate-400">Switch to Live Demo to start monitoring.</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex min-h-0 w-[34%] flex-col p-4">
@@ -157,19 +177,6 @@ export function DashboardClient() {
           />
         </div>
       </div>
-
-      {selectedIncident?.handoffSummary && (
-        <div className="shrink-0 border-t border-amber-200 px-6 py-4 max-h-[35vh] overflow-y-auto [scrollbar-width:thin]">
-          <HandoffSummary
-            summary={selectedIncident.handoffSummary}
-            cycleCount={selectedIncident.cycleCount}
-            lastCycleAt={selectedIncident.lastCycleAt}
-            handoff={selectedIncident.shiftHandoff}
-            criticalLogs={selectedIncident.criticalLogs ?? []}
-            progressHistory={selectedIncident.progressHistory ?? []}
-          />
-        </div>
-      )}
 
       <TensorlakeConsoleDrawer
         open={tensorlakeConsoleOpen}

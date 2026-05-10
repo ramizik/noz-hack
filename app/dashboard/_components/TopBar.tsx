@@ -7,7 +7,6 @@ import { Pill } from "./Pill";
 
 type Props = {
   memory: AgentMemory | null;
-  lastPoll: Date | null;
   agentStatus: "active" | "sleeping";
   nextCycleInSeconds: number;
   monitoringStatus: "all_clear" | "incident" | "idle";
@@ -18,7 +17,6 @@ type Props = {
 
 export function TopBar({
   memory,
-  lastPoll,
   agentStatus,
   nextCycleInSeconds,
   monitoringStatus,
@@ -88,11 +86,6 @@ export function TopBar({
         >
           {resetPending ? "Resetting..." : "Reset Demo"}
         </button>
-        {lastPoll && (
-          <span className="hidden tabular-nums text-[11px] text-slate-400 sm:inline">
-            {lastPoll.toLocaleTimeString()}
-          </span>
-        )}
         {agentStatus === "active" ? (
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 ring-1 ring-inset ring-emerald-200">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />

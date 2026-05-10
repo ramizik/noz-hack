@@ -8,8 +8,10 @@ import type {
   NiaRetrieval,
   DerivedTimelineEvent,
   IncidentPhaseStep,
+  NetworkState,
 } from "@/lib/types";
 import { AGENT_STATUS_ENDPOINT, POLL_INTERVAL_MS } from "@/lib/constants";
+import { DEFAULT_NETWORK_STATE } from "@/lib/networkTopology";
 
 const EMPTY_SUMMARY: AgentSummary = {
   sandboxName: "",
@@ -35,6 +37,7 @@ interface AgentStatus {
   monitoringStatus: "all_clear" | "incident" | "idle";
   monitoringMessage: string | null;
   monitoringLastCheckedAt: string | null;
+  networkState: NetworkState;
   loading: boolean;
   lastPoll: Date | null;
   refresh: () => Promise<void>;
@@ -51,6 +54,7 @@ export function useAgentStatus(): AgentStatus {
   const [monitoringStatus, setMonitoringStatus] = useState<"all_clear" | "incident" | "idle">("idle");
   const [monitoringMessage, setMonitoringMessage] = useState<string | null>(null);
   const [monitoringLastCheckedAt, setMonitoringLastCheckedAt] = useState<string | null>(null);
+  const [networkState, setNetworkState] = useState<NetworkState>(DEFAULT_NETWORK_STATE);
   const [loading, setLoading] = useState(true);
   const [lastPoll, setLastPoll] = useState<Date | null>(null);
 
@@ -68,6 +72,7 @@ export function useAgentStatus(): AgentStatus {
       setMonitoringStatus(data.monitoringStatus ?? "idle");
       setMonitoringMessage(data.monitoringMessage ?? null);
       setMonitoringLastCheckedAt(data.monitoringLastCheckedAt ?? null);
+      setNetworkState(data.networkState ?? DEFAULT_NETWORK_STATE);
       setLastPoll(new Date());
     } catch {
       // keep prior state
@@ -100,6 +105,7 @@ export function useAgentStatus(): AgentStatus {
     monitoringStatus,
     monitoringMessage,
     monitoringLastCheckedAt,
+    networkState,
     loading,
     lastPoll,
     refresh,
